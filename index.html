@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TUNTUN (Tim KARHUTLA) | Edukasi dan Simulasi Anti Penipuan Online</title>
+  <meta name="description" content="Panduan praktis dan simulasi HP interaktif untuk mengenali penipuan telepon (vishing), chat WhatsApp, file APK berbahaya, dan tautan phishing. Proyek TUNTUN oleh Tim KARHUTLA." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Notice Bar -->
+  <div class="top-banner" role="region" aria-label="Peringatan Keamanan">
+    <div class="container top-banner__inner">
+      <p>
+        <strong>Peringatan Keamanan:</strong> Bank dan instansi resmi tidak pernah meminta kode OTP, PIN, atau mengirim file berakhiran <code>.apk</code>.
+      </p>
+      <a href="#p3k-digital" class="top-banner__link">Panduan Darurat Saat Terlanjur Klik</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="navbar" id="top">
+    <div class="container navbar__inner">
+      <a href="#top" class="brand">
+        <div class="brand__logo" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="36" height="36" rx="8" fill="#074ce0" />
+            <path d="M18 7L9 11V17.5C9 23.3 12.8 28.6 18 30C23.2 28.6 27 23.3 27 17.5V11L18 7Z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M18 13V19" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="18" cy="22.5" r="1.4" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand__text">
+          <span class="brand__name">TUNTUN</span>
+          <span class="brand__team">Tim KARHUTLA</span>
+        </div>
+      </a>
+
+      <nav class="nav-links" aria-label="Navigasi Utama">
+        <a href="#tentang">Ancaman</a>
+        <a href="#modus">Modus Penipuan</a>
+        <a href="#simulasi" class="nav-links__highlight">Simulasi HP</a>
+        <a href="#anatomi">Titik Periksa</a>
+        <a href="#p3k-digital">P3K Digital</a>
+        <a href="#tim">Tim KARHUTLA</a>
+      </nav>
+
+      <div class="navbar__actions">
+        <button id="soundToggleBtn" class="btn-icon" type="button" aria-label="Aktifkan atau matikan efek suara simulasi" title="Efek Suara Simulasi: Aktif">
+          <span class="btn-icon__label" id="soundLabel">Suara: Aktif</span>
+        </button>
+        <a href="#simulasi" class="btn btn--primary btn--sm">Mulai Simulasi</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO SECTION (1.45:1 Split + Ruled Strip) -->
+    <section class="hero" id="tentang">
+      <div class="container hero__grid">
+        <div class="hero__content">
+          <h1 class="hero__title">
+            Kenali Pola <span class="text-gradient">Penipuan Online</span> Lewat Telepon dan Chat Sebelum Saldo Terkuras.
+          </h1>
+          <p class="hero__subtitle">
+            Proyek edukasi <strong>TUNTUN</strong> oleh <strong>Tim KARHUTLA</strong> merangkum pola manipulasi penipu yang menyamar sebagai kurir paket, petugas bank, hingga kerabat yang meminta transfer darurat. Latih respons Anda langsung pada simulasi layar HP di halaman ini.
+          </p>
+
+          <div class="hero__cta-group">
+            <a href="#simulasi" class="btn btn--primary btn--lg">Coba Simulasi Chat &amp; Telepon</a>
+            <a href="#modus" class="btn btn--secondary btn--lg">Baca 6 Modus Utama</a>
+          </div>
+
+          <div class="hero__stats" role="list" aria-label="Ringkasan Fakta Keamanan">
+            <div class="stat-card" role="listitem">
+              <span class="stat-card__num">3 Jalur Masuk</span>
+              <span class="stat-card__desc">Panggilan suara nomor pribadi, file <code>.apk</code> samaran di chat, dan tautan web tiruan.</span>
+            </div>
+            <div class="stat-card" role="listitem">
+              <span class="stat-card__num">OTP &amp; PIN</span>
+              <span class="stat-card__desc">Dua kredensial rahasia yang pantang diminta oleh petugas bank atau aparat mana pun.</span>
+            </div>
+            <div class="stat-card" role="listitem">
+              <span class="stat-card__num">5 Menit Pertama</span>
+              <span class="stat-card__desc">Waktu krusial mematikan koneksi internet jika terlanjur menginstal aplikasi mencurigakan.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Concept Diagram: Inputs Converging on TUNTUN Verification Filter -->
+        <div class="hero__visual">
+          <div class="alert-showcase" aria-label="Diagram Alur Pencegahan Penipuan TUNTUN">
+            <div class="alert-showcase__header">
+              <span class="alert-showcase__title">Alur Serangan Penipu vs Filter Verifikasi TUNTUN</span>
+            </div>
+
+            <div class="scam-preview-list">
+              <div class="scam-preview-item">
+                <div class="scam-preview-item__icon">CALL</div>
+                <div class="scam-preview-item__body">
+                  <div class="scam-preview-item__top">
+                    <strong>Panggilan Mengaku CS Bank / Polisi</strong>
+                    <span class="tag">Vishing</span>
+                  </div>
+                  <p>"Rekening Anda terindikasi transaksi mencurigakan. Sebutkan 6 digit kode OTP di SMS Anda sekarang."</p>
+                </div>
+              </div>
+
+              <div class="scam-preview-item">
+                <div class="scam-preview-item__icon">APK</div>
+                <div class="scam-preview-item__body">
+                  <div class="scam-preview-item__top">
+                    <strong>Kurir Paket Mengirim Aplikasi Pencuri SMS</strong>
+                    <span class="tag">Malware</span>
+                  </div>
+                  <p>"Alamat paket kurang jelas kak, tolong buka dan instal file <code>LIHAT-FOTO-PAKET.apk</code> ini."</p>
+                </div>
+              </div>
+
+              <div class="scam-preview-item">
+                <div class="scam-preview-item__icon">LINK</div>
+                <div class="scam-preview-item__body">
+                  <div class="scam-preview-item__top">
+                    <strong>Tawaran Komisi Misi &amp; Link Tarif Bank</strong>
+                    <span class="tag">Phishing</span>
+                  </div>
+                  <p>"Isi PIN dan OTP pada formulir tautan ini agar biaya admin tidak naik menjadi Rp150.000/bulan."</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert-showcase__footer">
+              <span><strong>Filter TUNTUN (Tim KARHUTLA):</strong> Tutup telepon, cek ekstensi file, dan verifikasi ke nomor resmi sebelum bertindak.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: ENSIKLOPEDIA MODUS PENIPUAN (Shared Pale-Grey Field) -->
+    <section class="section" id="modus">
+      <div class="container">
+        <div class="section-header section-header--split">
+          <div>
+            <span class="section-eyebrow">Peta Ancaman</span>
+            <h2 class="section-title">6 Modus Penipuan via Telepon dan Chat</h2>
+            <p class="section-desc">
+              Pelaku memanfaatkan kepanikan, tekanan waktu, atau iming-iming komisi agar korban menyerahkan kode OTP atau mentransfer uang sendiri.
+            </p>
+          </div>
+
+          <!-- Category Filter Buttons -->
+          <div class="filter-bar" role="tablist" aria-label="Filter Kategori Modus Penipuan">
+            <button class="filter-btn active" data-filter="all" role="tab" aria-selected="true">Semua (6)</button>
+            <button class="filter-btn" data-filter="call" role="tab" aria-selected="false">Telepon / Call</button>
+            <button class="filter-btn" data-filter="chat" role="tab" aria-selected="false">Chat &amp; Sosmed</button>
+            <button class="filter-btn" data-filter="apk" role="tab" aria-selected="false">File .APK</button>
+            <button class="filter-btn" data-filter="phishing" role="tab" aria-selected="false">Link Phishing</button>
+          </div>
+        </div>
+
+        <div class="modus-grid" id="modusGrid">
+          <!-- Card 1: Vishing Call CS Bank / Instansi -->
+          <article class="modus-card" data-category="call">
+            <div class="modus-card__top">
+              <span class="modus-code">01 / CALL</span>
+              <span class="tag">Vishing</span>
+            </div>
+            <h3>Telepon CS Bank atau Aparat Palsu</h3>
+            <p class="modus-card__summary">
+              Pelaku menelepon menggunakan nomor seluler pribadi dengan foto profil logo bank atau kepolisian, mengklaim rekening Anda akan diblokir atau terkena tagihan ilegal.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Mendesak keputusan cepat agar Anda tidak sempat mengecek kebenarannya.</li>
+                  <li>Meminta 6 digit kode OTP, PIN, CVV kartu, atau password.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Matikan telepon. Hubungi Call Center resmi yang tertera di bagian belakang kartu ATM Anda.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2: File APK Sniffing -->
+          <article class="modus-card" data-category="apk chat">
+            <div class="modus-card__top">
+              <span class="modus-code">02 / APK</span>
+              <span class="tag">Pencuri SMS</span>
+            </div>
+            <h3>Jebakan File .APK (Paket, Undangan, Tilang)</h3>
+            <p class="modus-card__summary">
+              Pelaku mengirim aplikasi Android (<code>.apk</code>) lewat WhatsApp dengan nama samaran seperti <em>"Lihat Foto Paket.apk"</em>, <em>"Surat Tilang ETLE.apk"</em>, atau <em>"Undangan.apk"</em>.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Nama file berakhiran <code>.apk</code>, bukan gambar (<code>.jpg</code>) atau dokumen (<code>.pdf</code>).</li>
+                  <li>HP meminta izin instalasi sumber tidak dikenal dan akses baca SMS.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Foto kiriman kurir asli selalu tampil langsung sebagai gambar di ruang chat. Jangan unduh file <code>.apk</code>.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 3: Telepon Darurat Keluarga -->
+          <article class="modus-card" data-category="call">
+            <div class="modus-card__top">
+              <span class="modus-code">03 / CALL</span>
+              <span class="tag">Manipulasi Panik</span>
+            </div>
+            <h3>Telepon Darurat Keluarga Kecelakaan</h3>
+            <p class="modus-card__summary">
+              Pelaku menelepon mengaku dokter atau polisi, mengabarkan anggota keluarga Anda mengalami kecelakaan kritis dan butuh biaya tindakan medis segera ke rekening pribadi.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Melarang Anda menutup telepon agar tidak bisa menghubungi keluarga asli.</li>
+                  <li>Rekening tujuan transfer menggunakan nama pribadi di luar rumah sakit.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Tutup telepon dan hubungi langsung nomor anggota keluarga yang bersangkutan untuk memastikan kondisinya.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 4: Chat Misi Freelance -->
+          <article class="modus-card" data-category="chat">
+            <div class="modus-card__top">
+              <span class="modus-code">04 / CHAT</span>
+              <span class="tag">Jebakan Deposit</span>
+            </div>
+            <h3>Tugas Paruh Waktu Like, Subscribe &amp; Deposit</h3>
+            <p class="modus-card__summary">
+              Pelaku menawarkan komisi mudah dari tugas menyukai video atau memberi ulasan. Komisi awal Rp25.000–Rp50.000 benar-benar dibayar untuk memancing kepercayaan Anda.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Mengundang Anda ke grup Telegram yang dipenuhi testimoni anggota komplotan.</li>
+                  <li>Meminta Anda mentransfer uang deposit untuk mencairkan komisi yang lebih besar.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Lowongan kerja yang sah membayar pekerja, bukan meminta setoran deposit. Blokir kontak saat diminta top-up.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 5: Link Phishing Perbankan / Pajak -->
+          <article class="modus-card" data-category="phishing chat">
+            <div class="modus-card__top">
+              <span class="modus-code">05 / LINK</span>
+              <span class="tag">Web Tiruan</span>
+            </div>
+            <h3>Link Phishing Kenaikan Tarif Bank</h3>
+            <p class="modus-card__summary">
+              Pesan WhatsApp atau SMS berisi surat edaran palsu tentang kenaikan biaya admin bank menjadi Rp150.000/bulan disertai tautan formulir pembatalan yang menyerupai situs bank.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Menggunakan domain tidak resmi seperti <code>.my.id</code>, <code>.xyz</code>, atau <code>bit.ly</code>.</li>
+                  <li>Formulir web meminta Username, Password M-Banking, PIN, dan kode OTP.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Periksa alamat domain pada browser. Jangan pernah mengetik PIN dan kode OTP pada situs dari tautan chat.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 6: Bajak Akun WA Teman Pinjam Uang -->
+          <article class="modus-card" data-category="chat call">
+            <div class="modus-card__top">
+              <span class="modus-code">06 / CHAT</span>
+              <span class="tag">Impersonasi</span>
+            </div>
+            <h3>Akun Teman Dibajak atau Nomor Baru Pinjam Uang</h3>
+            <p class="modus-card__summary">
+              Pelaku mengambil alih akun WhatsApp kenalan Anda atau memakai foto profil teman Anda pada nomor baru, lalu meminta pinjaman uang mendesak.
+            </p>
+            <div class="modus-card__details">
+              <div class="detail-box detail-box--bad">
+                <strong>Tanda Bahaya:</strong>
+                <ul>
+                  <li>Menolak panggilan video (Video Call) dengan alasan kamera rusak atau sedang rapat.</li>
+                  <li>Nama pemilik rekening tujuan berbeda dengan nama teman Anda.</li>
+                </ul>
+              </div>
+              <div class="detail-box detail-box--good">
+                <strong>Tindakan Pencegahan:</strong>
+                <p>Lakukan panggilan suara atau video ke nomor lama teman Anda sebelum mentransfer uang sepeser pun.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: SIMULASI INTERAKTIF HP (CALL & CHAT) -->
+    <section class="section section--simulator" id="simulasi">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Simulasi Interaktif</span>
+          <h2 class="section-title">Uji Respons Anda Menghadapi Penipu di Layar HP</h2>
+          <p class="section-desc">
+            Pilih satu dari lima skenario kasus di bawah ini. Baca pesan atau transkrip panggilan yang masuk di layar HP, tentukan tindakan Anda, dan perhatikan evaluasi dari <strong>TUNTUN (Tim KARHUTLA)</strong>.
+          </p>
+        </div>
+
+        <div class="simulator-layout">
+          <!-- Left Column: Scenario Selector & Live Coaching Panel -->
+          <div class="simulator-sidebar">
+            <div class="panel-card">
+              <div class="panel-card__header">
+                <h3>1. Pilih Skenario Kasus</h3>
+                <span class="badge-count">5 Skenario</span>
+              </div>
+              <div class="scenario-list" id="scenarioList" role="listbox" aria-label="Daftar Skenario Penipuan">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <!-- Live Analysis & Score Card -->
+            <div class="panel-card panel-card--coach" id="coachPanel">
+              <div class="coach-header">
+                <div class="coach-header__title">
+                  <div>
+                    <h4>Evaluasi Keputusan TUNTUN</h4>
+                    <p id="coachScenarioTag">Memantau interaksi simulasi</p>
+                  </div>
+                </div>
+                <div class="score-pill" id="securityScorePill" title="Skor Kewaspadaan Anda">
+                  <span>Skor:</span>
+                  <strong id="securityScoreValue">100</strong>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="meter-wrap" aria-label="Meter Kewaspadaan">
+                <div class="meter-bar" id="securityMeterBar" style="width: 100%"></div>
+              </div>
+
+              <!-- Red Flag Inspector Toggle -->
+              <div class="inspector-toggle-box">
+                <label class="switch-label" for="redFlagToggle">
+                  <input type="checkbox" id="redFlagToggle" />
+                  <span class="switch-slider"></span>
+                  <span class="switch-text">Tampilkan analisis <strong>Tanda Bahaya (Red Flag)</strong> di layar HP</span>
+                </label>
+              </div>
+
+              <!-- Dynamic Feedback Box -->
+              <div class="coach-feedback" id="coachFeedback" aria-live="polite">
+                <div class="coach-feedback__badge" id="feedbackBadge">Panduan Awal</div>
+                <p id="feedbackText">
+                  Baca pesan atau transkrip panggilan yang muncul di layar HP sebelah kanan, lalu pilih tindakan balasan di bagian bawah layar HP.
+                </p>
+              </div>
+
+              <div class="coach-actions">
+                <button type="button" class="btn btn--outline btn--sm" id="restartScenarioBtn">
+                  Ulangi Skenario Ini
+                </button>
+                <button type="button" class="btn btn--secondary btn--sm" id="nextScenarioBtn">
+                  Skenario Berikutnya
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Smartphone Product Mockup -->
+          <div class="phone-stage">
+            <div class="phone-frame" id="phoneFrame">
+              <div class="phone-notch" aria-hidden="true">
+                <span class="phone-notch__speaker"></span>
+                <span class="phone-notch__cam"></span>
+              </div>
+
+              <div class="phone-statusbar">
+                <span class="phone-statusbar__time" id="phoneClock">09:41</span>
+                <div class="phone-statusbar__icons">
+                  <span>4G</span>
+                  <span>88%</span>
+                </div>
+              </div>
+
+              <!-- PHONE MODE 1: CHAT INTERFACE -->
+              <div class="phone-screen phone-screen--chat" id="chatScreen">
+                <div class="chat-header" id="chatHeader">
+                  <div class="chat-header__avatar" id="chatAvatar">APK</div>
+                  <div class="chat-header__info">
+                    <div class="chat-header__name-row">
+                      <strong id="chatContactName">Kurir Ekspedisi Cepat</strong>
+                      <span class="unverified-tag" id="chatContactBadge">Nomor Baru</span>
+                    </div>
+                    <span class="chat-header__number" id="chatContactNumber">+62 813-9982-4410 • Online</span>
+                  </div>
+                </div>
+
+                <div class="chat-warning-banner" id="chatWarningBanner">
+                  Nomor ini tidak tersimpan di kontak Anda. Waspadai kiriman file <code>.apk</code> atau tautan.
+                </div>
+
+                <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
+                  <!-- Dynamically injected chat bubbles -->
+                </div>
+
+                <div class="typing-indicator hidden" id="typingIndicator">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-label">Pengirim sedang mengetik...</span>
+                </div>
+
+                <div class="phone-choices" id="chatChoices">
+                  <div class="phone-choices__header">
+                    <span>Pilih Tindakan Anda:</span>
+                  </div>
+                  <div class="phone-choices__list" id="chatChoicesList">
+                    <!-- Choice buttons injected here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- PHONE MODE 2: TELEPON / CALL INTERFACE -->
+              <div class="phone-screen phone-screen--call hidden" id="callScreen">
+                <div class="call-top-info">
+                  <span class="call-type-badge" id="callTypeBadge">Panggilan Suara Masuk</span>
+                  <div class="call-avatar-wrapper" id="callAvatarWrapper">
+                    <div class="call-avatar-ring"></div>
+                    <div class="call-avatar" id="callAvatar">CS</div>
+                  </div>
+                  <h3 class="call-caller-name" id="callCallerName">Halo CS Pusat Bank (Palsu)</h3>
+                  <p class="call-caller-num" id="callCallerNumber">+62 857-1029-8821 (Nomor Pribadi)</p>
+                  <span class="call-timer" id="callTimer">Berdering...</span>
+                </div>
+
+                <div class="call-transcript-box" id="callTranscriptBox">
+                  <div class="waveform" id="callWaveform" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="call-transcript-label">Transkrip Suara Penelepon:</div>
+                  <div class="call-transcript-content" id="callTranscriptContent">
+                    Panggilan masuk dari nomor tidak dikenal yang menggunakan foto profil logo Bank...
+                  </div>
+                </div>
+
+                <div class="call-choices-area" id="callChoicesArea">
+                  <div class="phone-choices__header">
+                    <span>Pilih Respons Anda di Telepon:</span>
+                  </div>
+                  <div class="phone-choices__list" id="callChoicesList">
+                    <!-- Call decision buttons injected here -->
+                  </div>
+                </div>
+              </div>
+
+              <div class="phone-home-bar" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUBSTANTIAL DARK PASSAGE #1: ANATOMI RED FLAG + PROTOKOL P3K DIGITAL -->
+    <section class="section" id="anatomi">
+      <div class="container">
+        <div class="section-header section-header--left">
+          <span class="section-eyebrow">Pemeriksaan Teknis</span>
+          <h2 class="section-title">5 Titik Kritis Sebelum Mengklik Tautan atau Mentransfer Uang</h2>
+          <p class="section-desc">
+            Pilih salah satu titik pemeriksaan di bawah ini untuk membandingkan ciri komunikasi penipu dengan prosedur instansi resmi.
+          </p>
+        </div>
+
+        <div class="anatomy-grid">
+          <div class="anatomy-tabs" role="tablist" aria-label="Titik Pemeriksaan Anatomi Penipuan">
+            <button class="anatomy-tab active" data-spot="1" role="tab" aria-selected="true">
+              <span class="anatomy-tab__num">01</span>
+              <div class="anatomy-tab__text">
+                <strong>Nomor Pengirim (+62 8xx vs Akun Resmi)</strong>
+                <span>Membedakan nomor seluler pribadi dengan kanal resmi bank</span>
+              </div>
+            </button>
+            <button class="anatomy-tab" data-spot="2" role="tab" aria-selected="false">
+              <span class="anatomy-tab__num">02</span>
+              <div class="anatomy-tab__text">
+                <strong>Tekanan Waktu dan Ancaman Blokir</strong>
+                <span>Pola gertakan "rekening diblokir dalam 15 menit"</span>
+              </div>
+            </button>
+            <button class="anatomy-tab" data-spot="3" role="tab" aria-selected="false">
+              <span class="anatomy-tab__num">03</span>
+              <div class="anatomy-tab__text">
+                <strong>Penyamaran Ekstensi File (.PDF.APK)</strong>
+                <span>Ikon dokumen palsu yang berisi aplikasi penyadap SMS</span>
+              </div>
+            </button>
+            <button class="anatomy-tab" data-spot="4" role="tab" aria-selected="false">
+              <span class="anatomy-tab__num">04</span>
+              <div class="anatomy-tab__text">
+                <strong>Alamat Domain Situs Phishing</strong>
+                <span>Cara memeriksa URL asli dibanding domain tiruan</span>
+              </div>
+            </button>
+            <button class="anatomy-tab" data-spot="5" role="tab" aria-selected="false">
+              <span class="anatomy-tab__num">05</span>
+              <div class="anatomy-tab__text">
+                <strong>Permintaan Kode OTP, PIN, dan Share Screen</strong>
+                <span>Batas informasi rahasia yang tidak boleh dibagikan</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="anatomy-detail-card" id="anatomyDetailCard" aria-live="polite">
+            <div class="anatomy-detail__badge">TITIK KRITIS #01</div>
+            <h3 id="anatomyTitle">Nomor Pengirim: Bank Resmi Tidak Memakai Nomor Seluler Pribadi (+62 8xx)</h3>
+            <p id="anatomyDesc">
+              Pelaku dapat memasang logo bank atau foto aparat pada profil WhatsApp mereka, tetapi nomor pengirim tetap berupa nomor seluler biasa dan bukan akun bisnis terverifikasi.
+            </p>
+            <div class="comparison-boxes" id="anatomyComparison">
+              <div class="comp-box comp-box--fake">
+                <span class="comp-label">CIRI PENIPU (PALSU)</span>
+                <code>+62 812-xxxx-xxxx (WA Pribadi)</code>
+                <p>Menelepon lewat WhatsApp pribadi, mengirim pesan personal, dan mendesak Anda membuka file atau menyebutkan OTP.</p>
+              </div>
+              <div class="comp-box comp-box--real">
+                <span class="comp-label">INSTANSI RESMI (ASLI)</span>
+                <code>Akun Terverifikasi &amp; Call Center Resmi</code>
+                <p>Menggunakan akun resmi bercentang verifikasi dan tidak pernah meminta PIN, password, atau kode OTP nasabah.</p>
+              </div>
+            </div>
+            <div class="anatomy-tip" id="anatomyTip">
+              <strong>Prinsip TUNTUN:</strong> Jangan mengandalkan nama yang muncul di aplikasi pelacak nomor. Tutup telepon dan hubungi nomor Call Center resmi di balik kartu ATM Anda.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: P3K DIGITAL (Continuous Dark Field with Linked Process Row) -->
+    <section class="section" id="p3k-digital">
+      <div class="container">
+        <div class="section-header section-header--left">
+          <span class="section-eyebrow">Protokol Darurat</span>
+          <h2 class="section-title">4 Langkah Pertolongan Pertama Saat Terlanjur Menginstal File .APK</h2>
+          <p class="section-desc">
+            Lakukan empat langkah berurutan ini dalam 5 menit pertama untuk memutus akses pencurian SMS dan mengamankan rekening Anda.
+          </p>
+        </div>
+
+        <div class="emergency-grid">
+          <div class="emergency-step">
+            <div class="emergency-step__num">1</div>
+            <div class="emergency-step__body">
+              <h3>Matikan Internet (Mode Pesawat)</h3>
+              <p>
+                Aktifkan <strong>Airplane Mode</strong> dan matikan Wi-Fi seketika. Langkah ini memutus koneksi aplikasi berbahaya agar tidak dapat meneruskan SMS OTP Anda ke server pelaku.
+              </p>
+            </div>
+          </div>
+
+          <div class="emergency-step">
+            <div class="emergency-step__num">2</div>
+            <div class="emergency-step__body">
+              <h3>Hapus Aplikasi &amp; Cabut Izin SMS</h3>
+              <p>
+                Buka <strong>Pengaturan &rarr; Aplikasi</strong>, cari aplikasi yang baru terinstal (sering kali tanpa ikon atau bernama "Cek Resi" / "System Update"), lalu pilih <strong>Uninstall</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="emergency-step">
+            <div class="emergency-step__num">3</div>
+            <div class="emergency-step__body">
+              <h3>Blokir Sementara M-Banking</h3>
+              <p>
+                Gunakan telepon lain yang aman untuk menghubungi Call Center bank Anda. Minta pemblokiran sementara rekening dan ganti PIN serta password dari perangkat yang bersih.
+              </p>
+            </div>
+          </div>
+
+          <div class="emergency-step">
+            <div class="emergency-step__num">4</div>
+            <div class="emergency-step__body">
+              <h3>Laporkan Nomor &amp; Rekening Pelaku</h3>
+              <p>
+                Simpan tangkapan layar chat, nomor telepon pelaku, dan nomor rekening penampung, lalu laporkan ke kanal resmi:
+              </p>
+              <div class="channel-chips">
+                <span class="chip"><strong>IASC OJK:</strong> iasc.ojk.go.id</span>
+                <span class="chip"><strong>CekRekening:</strong> cekrekening.id</span>
+                <span class="chip"><strong>Aduan Nomor:</strong> aduannomor.id</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: KUIS RINGKAS (Pale Evaluation Field) -->
+    <section class="section" id="kuis">
+      <div class="container">
+        <div class="quiz-box">
+          <div class="quiz-box__left">
+            <span class="section-eyebrow">Evaluasi Mandiri</span>
+            <h2>Uji Kesiapan Anda Menghadapi Rekayasa Sosial</h2>
+            <p>
+              Jawab 3 studi kasus singkat ini untuk menguji ketepatan tindakan Anda saat menerima telepon atau pesan mencurigakan.
+            </p>
+            <div class="quiz-progress-info">
+              <span id="quizStatusText">Pertanyaan 1 dari 3</span>
+              <button type="button" class="btn btn--outline btn--sm hidden" id="resetQuizBtn">Ulangi Kuis</button>
+            </div>
+          </div>
+
+          <div class="quiz-box__right" id="quizContainer" aria-live="polite">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUBSTANTIAL DARK PASSAGE #2: TENTANG TUNTUN & TEAM KARHUTLA -->
+    <section class="section section--team" id="tim">
+      <div class="container">
+        <div class="team-banner">
+          <div class="team-banner__content">
+            <span class="team-badge">PROFIL TIM</span>
+            <h2>TUNTUN oleh <span class="text-gradient">Tim KARHUTLA</span></h2>
+            <p class="team-lead">
+              Mencegah satu percikan kelengahan sebelum merembet ke rekening dan daftar kontak keluarga.
+            </p>
+            <p class="team-desc">
+              Nama <strong>KARHUTLA</strong> (Kebakaran Hutan dan Lahan) diambil sebagai pengingat cara kerja penipuan digital: kerugian besar selalu berawal dari satu titik kecil—seperti mengklik satu file <code>.apk</code> atau menyebutkan satu kode OTP karena panik—lalu merembet cepat membajak akun WhatsApp korban untuk menipu kerabat lainnya.
+            </p>
+            <p class="team-desc">
+              Melalui <strong>TUNTUN</strong> (Tuntunan Edukasi Anti Penipuan Online), <strong>Tim KARHUTLA</strong> menyediakan simulasi interaktif tanpa database agar masyarakat dapat mengenali pola penipuan telepon dan chat secara langsung.
+            </p>
+
+            <div class="team-pillars">
+              <div class="pillar-item">
+                <strong>Deteksi Dini</strong>
+                <span>Mengenali ciri nomor pengirim, ekstensi file, dan tekanan psikologis penipu.</span>
+              </div>
+              <div class="pillar-item">
+                <strong>Sekat Penyebaran</strong>
+                <span>Memutus rantai pembajakan akun WhatsApp agar tidak merugikan kontak keluarga.</span>
+              </div>
+              <div class="pillar-item">
+                <strong>Latihan Praktis</strong>
+                <span>Mempraktikkan cara merespons panggilan dan pesan penipuan lewat simulasi HP.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="team-banner__card">
+            <div class="emblem-card">
+              <span class="emblem-card__project">PROYEK EDUKASI KEAMANAN DIGITAL</span>
+              <h3>TUNTUN</h3>
+              <div class="emblem-card__divider"></div>
+              <span class="emblem-card__label">Disusun Oleh</span>
+              <h4 class="emblem-card__team">TIM KARHUTLA</h4>
+              <p class="emblem-card__motto">"Padamkan kepanikan, verifikasi sumbernya, lindungi data perbankan Anda."</p>
+              <a href="#simulasi" class="btn btn--primary btn--full">Mulai Simulasi HP</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <strong>TUNTUN — Tim KARHUTLA</strong>
+        <p>Edukasi dan simulasi interaktif pencegahan penipuan online via telepon, chat, file APK, dan phishing.</p>
+      </div>
+      <div class="footer__links">
+        <a href="#tentang">Beranda</a>
+        <a href="#modus">Modus Penipuan</a>
+        <a href="#simulasi">Simulasi HP</a>
+        <a href="#anatomi">Titik Periksa</a>
+        <a href="#p3k-digital">P3K Digital</a>
+      </div>
+      <div class="footer__copy">
+        <p>&copy; 2026 <strong>TUNTUN oleh Tim KARHUTLA</strong>. Materi edukasi literasi keamanan digital.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
