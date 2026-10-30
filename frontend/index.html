@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Guardian — Guardians of the Digital Space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="site-header" role="banner">
+    <div class="site-container header-inner">
+      <a href="#hero" class="brand" aria-label="Digital Guardian Beranda">
+        <span class="brand-shield" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </span>
+        <span class="brand-name">Digital Guardian</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Navigasi Utama">
+        <a href="#features" class="nav-link">Modul</a>
+        <a href="#simulator" class="nav-link">Scam Simulator</a>
+        <a href="#detective" class="nav-link">Scam Detective</a>
+        <a href="#guide" class="nav-link">Action Guide</a>
+        <a href="#faq" class="nav-link">Bantuan</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="#simulator" class="btn btn-primary btn-sm">Mulai Simulasi</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <!-- Hero Section (1.45:1 Layout) -->
+    <section id="hero" class="hero-section" aria-labelledby="hero-heading">
+      <div class="site-container hero-grid">
+        <div class="hero-text">
+          <div class="badge-pill">
+            <span class="badge-dot" aria-hidden="true"></span>
+            <span>Platform Pembelajaran Keamanan Digital Interaktif</span>
+          </div>
+          <h1 id="hero-heading" class="hero-title">
+            Guardians of the Digital Space — Empowering Today's Generation.
+          </h1>
+          <p class="hero-intro">
+            Latih ketajaman berpikir dan pengambilan keputusan nyata menghadapi jebakan rekayasa sosial, phising perbankan, lowongan kerja palsu, dan pencurian OTP sebelum menjadi korban berikutnya.
+          </p>
+          <div class="hero-actions">
+            <a href="#simulator" class="btn btn-primary">Uji Refleks di Simulator</a>
+            <a href="#detective" class="btn btn-secondary">Investigasi Kasus Nyata</a>
+          </div>
+        </div>
+
+        <div class="hero-diagram-wrap" aria-label="Diagram Arsitektur Pertahanan Digital Guardian">
+          <div class="hero-diagram">
+            <div class="diagram-ring diagram-ring-outer" aria-hidden="true"></div>
+            <div class="diagram-ring diagram-ring-inner" aria-hidden="true"></div>
+            
+            <!-- Orbit Nodes / Threat inputs -->
+            <div class="orbit-node node-nw">
+              <span class="node-icon">🔗</span>
+              <span class="node-label">Tautan Phising</span>
+            </div>
+            <div class="orbit-node node-ne">
+              <span class="node-icon">🔑</span>
+              <span class="node-label">Pencurian OTP</span>
+            </div>
+            <div class="orbit-node node-sw">
+              <span class="node-icon">💼</span>
+              <span class="node-label">Loker Tipuan</span>
+            </div>
+            <div class="orbit-node node-se">
+              <span class="node-icon">💸</span>
+              <span class="node-label">Manipulasi Dana</span>
+            </div>
+
+            <!-- Central Product Core -->
+            <div class="diagram-core">
+              <div class="core-icon-wrap" aria-hidden="true">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <strong class="core-title">Digital Guardian Engine</strong>
+              <span class="core-subtitle">Deteksi & Evaluasi Deterministik</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ruled Facts Strip -->
+      <div class="facts-strip" aria-label="Fakta dan Metrik Edukasi">
+        <div class="site-container facts-grid">
+          <div class="fact-item">
+            <span class="fact-figure">100%</span>
+            <span class="fact-label">Deterministik & Skenario Nyata</span>
+          </div>
+          <div class="fact-item">
+            <span class="fact-label-top fact-figure">4 Modul</span>
+            <span class="fact-label">Simulator, Detektif, Panduan & Profil</span>
+          </div>
+          <div class="fact-item">
+            <span class="fact-figure">&lt; 3 Mnt</span>
+            <span class="fact-label">Waktu Rata-rata per Sesi Latihan</span>
+          </div>
+          <div class="fact-item">
+            <span class="fact-figure">Tanpa Akun</span>
+            <span class="fact-label">Aman, Privasi Terjaga & Langsung Aktif</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pale-Grey Field: Short Explanations & Editorial Cards -->
+    <section id="features" class="section-muted" aria-labelledby="features-heading">
+      <div class="site-container">
+        <div class="section-header">
+          <h2 id="features-heading" class="section-title">Mengapa Pendekatan Interaktif Diperlukan?</h2>
+          <p class="section-description">
+            Modul edukasi konvensional bersifat pasif dan membosankan. Digital Guardian menempatkan Anda di kursi pengemudi saat serangan rekayasa sosial dilancarkan secara riil.
+          </p>
+        </div>
+
+        <div class="editorial-grid">
+          <article class="editorial-card">
+            <div class="card-visual">
+              <div class="visual-graphic graph-simulator" aria-hidden="true">
+                <div class="mock-chat-bubble mock-bubble-them">Paket Anda tertahan di Bea Cukai. Unduh lampiran surat.apk</div>
+                <div class="mock-chat-bubble mock-bubble-you">Saya cek nomor resi resmi ekspedisi terlebih dahulu.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <span class="card-tag">Modul 01 • Percakapan Interaktif</span>
+              <h3 class="card-title">Scam Simulator Berantai</h3>
+              <p class="card-text">
+                Simulasi chat dengan percakapan bercabang adaptif. Setiap pilihan kata atau tindakan memiliki konsekuensi nyata pada keamanan data pribadi Anda.
+              </p>
+            </div>
+          </article>
+
+          <article class="editorial-card">
+            <div class="card-visual">
+              <div class="visual-graphic graph-detective" aria-hidden="true">
+                <div class="mock-evidence-slip">
+                  <div class="slip-header">Bukti #INV-849: Pesan WhatsApp</div>
+                  <div class="slip-highlight">Domain: bit.ly/undian-bca-resmi-2026 <span>⚠️ Janggal</span></div>
+                  <div class="slip-line">Tenggat klaim hadiah hanya tersisa 15 menit!</div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <span class="card-tag">Modul 02 • Investigasi Bukti</span>
+              <h3 class="card-title">Scam Detective Forensik</h3>
+              <p class="card-text">
+                Teliti tangkapan layar, email mencurigakan, dan surat edaran manipulatif. Temukan indikator merah seperti urgensi palsu dan tautan phising.
+              </p>
+            </div>
+          </article>
+
+          <article class="editorial-card">
+            <div class="card-visual">
+              <div class="visual-graphic graph-guide" aria-hidden="true">
+                <div class="mock-checklist">
+                  <div class="check-item check-done">Blokir Kartu Debit & M-Banking</div>
+                  <div class="check-item check-done">Laporkan ke Layanan Kontak OJK</div>
+                  <div class="check-item check-pending">Ubah Kata Sandi Email Pemulihan</div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <span class="card-tag">Modul 03 • Prosedur Darurat</span>
+              <h3 class="card-title">Action Guide & Pertolongan Pertama</h3>
+              <p class="card-text">
+                Langkah mitigasi terstruktur dan teruji ketika Anda atau keluarga telah terlanjur membagikan data rahasia atau mentransfer uang.
+              </p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Continuous Dark Field 1: Interactive Scam Simulator & Process Steps -->
+    <section id="simulator" class="section-field" aria-labelledby="sim-heading">
+      <div class="site-container">
+        <div class="section-header dark-header">
+          <span class="badge-pill on-dark">Simulasi Aktif • Modul 01</span>
+          <h2 id="sim-heading" class="section-title">Laboratorium Scam Simulator</h2>
+          <p class="section-description">
+            Uji ketahanan Anda terhadap taktik manipulasi psikologis. Pilih skenario di bawah ini dan ambil keputusan dalam percakapan nyata.
+          </p>
+        </div>
+
+        <!-- Scenario Selector Tabs -->
+        <div class="scenario-nav" role="tablist" aria-label="Daftar Skenario Penipuan">
+          <button role="tab" aria-selected="true" id="tab-scen-courier" aria-controls="sim-workbench" class="tab-btn active" data-scenario="courier">
+            <span class="tab-dot" aria-hidden="true"></span>
+            Kurir Paket Palsu (APK)
+          </button>
+          <button role="tab" aria-selected="false" id="tab-scen-bank" aria-controls="sim-workbench" class="tab-btn" data-scenario="bank">
+            <span class="tab-dot" aria-hidden="true"></span>
+            Perubahan Tarif Bank (OTP)
+          </button>
+          <button role="tab" aria-selected="false" id="tab-scen-job" aria-controls="sim-workbench" class="tab-btn" data-scenario="job">
+            <span class="tab-dot" aria-hidden="true"></span>
+            Loker Freelance Like & Subscribe
+          </button>
+        </div>
+
+        <!-- Interactive Simulator Interface -->
+        <div id="sim-workbench" class="sim-container" role="region" aria-live="polite">
+          <div class="sim-sidebar">
+            <div class="sim-meta-box">
+              <span class="meta-label">Skenario Aktif</span>
+              <h3 id="sim-scenario-title" class="meta-value">Kurir Paket Fiktif (.APK Tersembunyi)</h3>
+              <p id="sim-scenario-desc" class="meta-desc">Penipu mengaku kurir ekspedisi dan mendesak korban membuka file surat bukti pengiriman.</p>
+            </div>
+
+            <div class="sim-status-box">
+              <div class="status-row">
+                <span>Status Ancaman:</span>
+                <span id="sim-risk-badge" class="risk-badge risk-normal">Normal</span>
+              </div>
+              <div class="status-row">
+                <span>Langkah:</span>
+                <span id="sim-step-indicator">Langkah 1 dari 3</span>
+              </div>
+              <div class="status-row">
+                <span>Skor Refleks:</span>
+                <span id="sim-score-indicator" class="score-num">100 / 100</span>
+              </div>
+            </div>
+
+            <button id="sim-restart-btn" class="btn btn-secondary-dark btn-block" type="button">
+              Ulangi Skenario
+            </button>
+          </div>
+
+          <div class="sim-chat-area">
+            <div class="sim-chat-header">
+              <div class="chat-contact">
+                <div class="contact-avatar" id="sim-contact-avatar" aria-hidden="true">KP</div>
+                <div>
+                  <strong class="contact-name" id="sim-contact-name">Budi - Ekspedisi Kilat</strong>
+                  <span class="contact-status" id="sim-contact-status">+62 821-9901-4421 • Online</span>
+                </div>
+              </div>
+              <span class="secure-tag">Lingkungan Uji Aman</span>
+            </div>
+
+            <div class="sim-chat-messages" id="sim-messages" role="log" aria-label="Riwayat Percakapan">
+              <!-- Chat messages injected by JS -->
+            </div>
+
+            <!-- Decision Options Area -->
+            <div class="sim-actions-area" id="sim-actions-panel">
+              <span class="actions-prompt" id="sim-actions-title">Pilih Tindakan atau Balasan Anda:</span>
+              <div class="sim-choices-grid" id="sim-choices-container">
+                <!-- Choice buttons injected by JS -->
+              </div>
+            </div>
+
+            <!-- Educational Outcome Feedback -->
+            <div class="sim-feedback-box" id="sim-feedback-panel" hidden>
+              <div class="feedback-badge" id="sim-feedback-type">Evaluasi Keputusan</div>
+              <h4 class="feedback-headline" id="sim-feedback-title">Penjelasan Dampak</h4>
+              <p class="feedback-text" id="sim-feedback-explanation"></p>
+              <div class="feedback-actions">
+                <button id="sim-next-btn" class="btn btn-primary" type="button">Lanjutkan Simulasi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Step Process Row Linked Across -->
+        <div class="process-strip" aria-label="Alur Pengambilan Keputusan Aman">
+          <h3 class="process-strip-heading">Prinsip 3 Detik: Cara Menghadapi Pesan Tak Dikenal</h3>
+          <div class="process-steps-row">
+            <div class="process-step">
+              <div class="step-badge">1</div>
+              <h4 class="step-title">Tahan Diri & Jeda</h4>
+              <p class="step-desc">Penipu selalu menanamkan rasa panik atau keserakahan semu. Jangan langsung merespons.</p>
+            </div>
+            <div class="step-connector" aria-hidden="true"></div>
+            <div class="process-step">
+              <div class="step-badge">2</div>
+              <h4 class="step-title">Periksa Indikator</h4>
+              <p class="step-desc">Periksa ekstensi file (.apk, .exe), keaslian nomor kontak, serta kejelasan domain tautan.</p>
+            </div>
+            <div class="step-connector" aria-hidden="true"></div>
+            <div class="process-step">
+              <div class="step-badge">3</div>
+              <h4 class="step-title">Verifikasi Kanal Resmi</h4>
+              <p class="step-desc">Hubungi call center resmi dari aplikasi orisinal atau situs web terverifikasi, bukan kontak di pesan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pale Comparison and Disclosure Area: Scam Detective & Guardian Profile -->
+    <section id="detective" class="section-muted" aria-labelledby="detective-heading">
+      <div class="site-container">
+        <div class="section-header">
+          <span class="badge-pill">Investigasi Kasus • Modul 02</span>
+          <h2 id="detective-heading" class="section-title">Scam Detective: Uji Ketajaman Bukti</h2>
+          <p class="section-description">
+            Sebagai investigator digital, telaah bukti pesan di bawah ini. Klik dan tandai semua indikator bahaya yang Anda temukan untuk memverifikasi apakah ini upaya penipuan.
+          </p>
+        </div>
+
+        <!-- Detective Case Workbench -->
+        <div class="detective-workbench">
+          <div class="evidence-panel">
+            <div class="evidence-toolbar">
+              <div class="evidence-meta">
+                <span class="evidence-tag">Bukti Kasus #04-PHISH</span>
+                <strong class="evidence-title">Pemberitahuan Undian Festival Belanja</strong>
+              </div>
+              <span class="evidence-instruction">Klik elemen yang mencurigakan di dalam pesan:</span>
+            </div>
+
+            <!-- Interactive Evidence Card with clickable hotspots -->
+            <div class="evidence-card" id="evidence-view" role="group" aria-label="Pesan Mencurigakan untuk Dianalisis">
+              <div class="evidence-sender">
+                <span class="sender-avatar" aria-hidden="true">🎁</span>
+                <div>
+                  <div class="sender-title">
+                    <button type="button" class="evidence-clue-btn" data-clue="unverified-number" aria-pressed="false">
+                      +62 858-1294-0982 (Akun Pribadi)
+                    </button>
+                  </div>
+                  <div class="sender-sub">Diterima: Hari ini, 10:14 WIB</div>
+                </div>
+              </div>
+
+              <div class="evidence-body-text">
+                <p>Selamat! Nomor handphone Anda terpilih sebagai pemenang <strong>Grand Prize Toyota Raize</strong> dari Panitia Festival Akhir Tahun.</p>
+                <p>
+                  <button type="button" class="evidence-clue-btn" data-clue="unrealistic-offer" aria-pressed="false">
+                    Hadiah bebas biaya administrasi dan dapat langsung dicairkan dalam bentuk uang tunai Rp 250.000.000,-
+                  </button>
+                </p>
+                <p>
+                  Untuk verifikasi klaim hadiah dan pencairan dana, silakan aktivasi token formulir pada portal berikut:
+                </p>
+                <p>
+                  <button type="button" class="evidence-clue-btn" data-clue="fake-domain" aria-pressed="false">
+                    https://pesta-hadiah-resmi-verifikasi.vip/klaim
+                  </button>
+                </p>
+                <p>
+                  <button type="button" class="evidence-clue-btn" data-clue="urgency" aria-pressed="false">
+                    Peringatan: Hadiah akan dibatalkan otomatis dan dialihkan ke peserta cadangan jika tidak diklaim dalam 15 menit ke depan!
+                  </button>
+                </p>
+              </div>
+            </div>
+
+            <div class="evidence-footer">
+              <button id="detective-submit-btn" class="btn btn-primary" type="button">
+                Kirim Laporan Investigasi
+              </button>
+              <button id="detective-reset-btn" class="btn btn-secondary" type="button">
+                Reset Pilihan
+              </button>
+            </div>
+          </div>
+
+          <!-- Detective Results & Profile Summary Card -->
+          <div class="results-panel">
+            <div class="guardian-profile-card" id="guardian-profile-card">
+              <div class="profile-header">
+                <div class="profile-badge-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="7"/>
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="profile-title">Guardian Profile Evaluator</h3>
+                  <span class="profile-subtitle">Tingkat Ketelitian Forensik Anda</span>
+                </div>
+              </div>
+
+              <div class="score-display">
+                <div class="score-circle">
+                  <span class="score-value" id="profile-score-num">--</span>
+                  <span class="score-total">/ 100</span>
+                </div>
+                <div class="score-meta">
+                  <strong class="score-status-title" id="profile-status-title">Belum Dianalisis</strong>
+                  <p class="score-status-desc" id="profile-status-desc">Klik indikator janggal pada bukti di samping, lalu tekan tombol "Kirim Laporan Investigasi".</p>
+                </div>
+              </div>
+
+              <div class="profile-breakdown">
+                <div class="breakdown-item">
+                  <span class="breakdown-label">Indikator Terdeteksi:</span>
+                  <strong class="breakdown-val" id="profile-hits">0 / 4</strong>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-label">Kategori Kuat:</span>
+                  <strong class="breakdown-val text-success" id="profile-strength">-</strong>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-label">Area Rawan Terlewat:</span>
+                  <strong class="breakdown-val text-accent" id="profile-weakness">-</strong>
+                </div>
+              </div>
+
+              <div id="detective-feedback-details" class="detective-clues-list" hidden>
+                <!-- Clue feedbacks -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Native Disclosures FAQ & Action Guide Situations -->
+    <section id="guide" class="section-muted border-top-rule" aria-labelledby="guide-heading">
+      <div class="site-container">
+        <div class="section-header">
+          <span class="badge-pill">Panduan Mitigasi • Modul 03</span>
+          <h2 id="guide-heading" class="section-title">Action Guide: Apa yang Harus Dilakukan Sekarang?</h2>
+          <p class="section-description">
+            Pilih situasi yang sedang Anda atau rekan Anda hadapi untuk melihat panduan tindakan darurat tahap demi tahap secara tepat.
+          </p>
+        </div>
+
+        <!-- Situation Tabs -->
+        <div class="situation-grid" role="region" aria-label="Pilihan Kondisi Darurat">
+          <!-- Accordion 1 -->
+          <details class="faq-disclosure" open>
+            <summary class="faq-summary">
+              <span class="faq-summary-content">
+                <span class="faq-num">01</span>
+                <span class="faq-question">Situasi: Saya baru menerima pesan / penawaran mencurigakan</span>
+              </span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-answer">
+              <p><strong>Status Risiko: Rendah (Selama belum ada klik atau pembagian data).</strong></p>
+              <ul class="steps-bullet-list">
+                <li><strong>Jangan tekan tautan apapun:</strong> Hindari membuka preview link, gambar dokumen berekstensi .apk, atau file terkompresi.</li>
+                <li><strong>Cek nomor di aplikasi identifikasi:</strong> Periksa reputasi kontak di aplikasi seperti Getcontact atau Truecaller untuk melihat tag penipuan dari pengguna lain.</li>
+                <li><strong>Konfirmasi ke narahubung resmi:</strong> Jika mengatasnamakan instansi perbankan atau ekspedisi, hubungi akun bercentang biru resmi atau nomor call center resmi mereka.</li>
+                <li><strong>Tandai Spam & Blokir:</strong> Laporkan nomor tersebut melalui fitur Report Spam bawaan aplikasi pesan instan Anda.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Accordion 2 -->
+          <details class="faq-disclosure">
+            <summary class="faq-summary">
+              <span class="faq-summary-content">
+                <span class="faq-num">02</span>
+                <span class="faq-question">Situasi: Saya sudah terlanjur mengeklik tautan yang dikirimkan</span>
+              </span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-answer">
+              <p><strong>Status Risiko: Sedang (Potensi malware atau pencurian cookie sesi).</strong></p>
+              <ul class="steps-bullet-list">
+                <li><strong>Tutup tab peramban seketika:</strong> Segera keluar dari browser dan jangan izinkan notifikasi pop-up apa pun.</li>
+                <li><strong>Putuskan koneksi internet:</strong> Aktifkan Mode Pesawat (Airplane Mode) atau matikan Wi-Fi sementara untuk memutus komunikasi data jahat jika ada file yang sempat terunduh otomatis.</li>
+                <li><strong>Periksa folder unduhan (Downloads):</strong> Jika ada file berekstensi .apk atau .exe yang terunduh, langsung hapus permanen tanpa mengeklik / menginstalnya.</li>
+                <li><strong>Hapus riwayat dan cache browser:</strong> Buka pengaturan browser Anda, lalu lakukan Clear Browsing Data & Cookies.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Accordion 3 -->
+          <details class="faq-disclosure">
+            <summary class="faq-summary">
+              <span class="faq-summary-content">
+                <span class="faq-num">03</span>
+                <span class="faq-question">Situasi: Saya sudah memasukkan kata sandi atau kode OTP di web palsu</span>
+              </span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-answer">
+              <p><strong>Status Risiko: Kritis (Akun dalam ancaman pengambilalihan).</strong></p>
+              <ul class="steps-bullet-list">
+                <li><strong>Ganti kata sandi utama segera:</strong> Buka situs atau aplikasi resmi dari perangkat aman lain, lalu ganti kata sandi email, akun medsos, atau perbankan Anda saat ini juga.</li>
+                <li><strong>Keluarkan semua sesi aktif:</strong> Gunakan fitur "Log out of all devices" atau "Keluar dari semua perangkat" pada pengaturan keamanan akun terkait.</li>
+                <li><strong>Periksa nomor telepon & email pemulihan:</strong> Pastikan pelaku belum mengganti detail kontak pemulihan 2FA di akun Anda.</li>
+                <li><strong>Hubungi Call Center Perbankan:</strong> Jika yang dimasukkan adalah kredensial rekening/m-banking, segera minta petugas memblokir akses m-banking dan kartu Anda sementara.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Accordion 4 -->
+          <details class="faq-disclosure">
+            <summary class="faq-summary">
+              <span class="faq-summary-content">
+                <span class="faq-num">04</span>
+                <span class="faq-question">Situasi: Saya sudah melakukan transfer uang ke rekening penipu</span>
+              </span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-answer">
+              <p><strong>Status Risiko: Kritis Finansial (Butuh tindakan pembekuan cepat).</strong></p>
+              <ul class="steps-bullet-list">
+                <li><strong>Telepon Call Center Bank Pengirim (Golden Hour 1-2 Jam):</strong> Informasikan bahwa Anda baru saja menjadi korban penipuan. Minta penerbitan surat laporan penipuan dan permohonan pemblokiran rekening tujuan (bank penerima).</li>
+                <li><strong>Simpan seluruh alat bukti:</strong> Ambil screenshot bukti transfer, nomor rekening pelaku, chat utuh, dan link web penipu.</li>
+                <li><strong>Laporkan ke CekRekening.id (Kemenkominfo):</strong> Masukkan nomor rekening dan bank pelaku ke portal resmi pemerintah agar rekening pelaku masuk daftar hitam nasional.</li>
+                <li><strong>Buat Laporan Polisi (SPKT):</strong> Bawa semua bukti ke kantor polisi terdekat untuk penerbitan Laporan Polisi resmi guna proses mediasi perbankan.</li>
+              </ul>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pale Comparison Area: Matriks Karakteristik Modus Tipuan -->
+    <section class="section-muted" aria-labelledby="matrix-heading">
+      <div class="site-container">
+        <div class="section-header">
+          <h2 id="matrix-heading" class="section-title">Matriks Karakteristik Modus Kejahatan Siber</h2>
+          <p class="section-description">
+            Perbandingan taktik rekayasa sosial yang paling umum menyerang masyarakat Indonesia saat ini.
+          </p>
+        </div>
+
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">Modus Penipuan</th>
+                <th scope="col">Vektor Serangan</th>
+                <th scope="col">Trik Manipulasi</th>
+                <th scope="col">Indikator Kunci</th>
+                <th scope="col">Tindakan Pertahanan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Sniffing APK Paket</strong></td>
+                <td>WhatsApp / Telegram</td>
+                <td>Rasa cemas barang pesanan rusak / tertahan</td>
+                <td><span class="badge-pill sm">Ekstensi .apk</span></td>
+                <td>Hanya pasang aplikasi dari toko resmi</td>
+              </tr>
+              <tr>
+                <td><strong>Phising Kenaikan Tarif Bank</strong></td>
+                <td>SMS / Direct Message</td>
+                <td>Urgensi denda otomatis jika tidak menolak tarif</td>
+                <td><span class="badge-pill sm">Domain web tiruan</span></td>
+                <td>Bank resmi tidak meminta OTP lewat link formulir</td>
+              </tr>
+              <tr>
+                <td><strong>Loker Paruh Waktu Palsu</strong></td>
+                <td>Telegram / Medsos</td>
+                <td>Keuntungan instan like/follow akun tertentu</td>
+                <td><span class="badge-pill sm">Deposit uang awal</span></td>
+                <td>Tolak pekerjaan apa pun yang mensyaratkan setoran</td>
+              </tr>
+              <tr>
+                <td><strong>Undian Berhadiah Bodong</strong></td>
+                <td>SMS / WhatsApp Blast</td>
+                <td>Euforia menang hadiah bernilai ratusan juta</td>
+                <td><span class="badge-pill sm">Batas waktu tergesa</span></td>
+                <td>Verifikasi langsung via situs korporasi resmi</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Continuous Dark Field 2: Closing Call to Action & Footer -->
+    <section class="section-field closing-cta" aria-labelledby="cta-heading">
+      <div class="site-container cta-container">
+        <div class="cta-content">
+          <div class="badge-pill on-dark">Jadilah Bagian dari Solusi</div>
+          <h2 id="cta-heading" class="cta-title">Siap Menjadi Digital Guardian di Lingkungan Anda?</h2>
+          <p class="cta-desc">
+            Satu keputusan sadar dapat menyelamatkan tabungan, identitas, dan rasa aman digital orang-orang terdekat Anda. Bagikan pengetahuan ini sekarang.
+          </p>
+          <div class="cta-actions">
+            <a href="#simulator" class="btn btn-primary">Uji Refleks di Simulator</a>
+            <a href="#guide" class="btn btn-secondary-dark">Pelajari Prosedur Darurat</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="site-container">
+      <div class="footer-top">
+        <div class="footer-brand-col">
+          <div class="brand">
+            <span class="brand-shield" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </span>
+            <span class="brand-name">Digital Guardian</span>
+          </div>
+          <p class="footer-tagline">
+            Guardians of the Digital Space — Inisiatif edukasi keamanan siber dan ketahanan digital untuk generasi muda Indonesia.
+          </p>
+        </div>
+
+        <div class="footer-nav-col">
+          <strong class="footer-heading">Modul Latihan</strong>
+          <ul class="footer-links">
+            <li><a href="#simulator">Scam Simulator</a></li>
+            <li><a href="#detective">Scam Detective</a></li>
+            <li><a href="#guide">Action Guide Terpadu</a></li>
+            <li><a href="#detective">Guardian Profile</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <strong class="footer-heading">Kanal Pelaporan Resmi</strong>
+          <ul class="footer-links">
+            <li><a href="https://cekrekening.id" target="_blank" rel="noopener noreferrer">CekRekening.id (Kemenkominfo) ↗</a></li>
+            <li><a href="https://patrolisiber.id" target="_blank" rel="noopener noreferrer">Patroli Siber Polri ↗</a></li>
+            <li><a href="https://konsumen.ojk.go.id" target="_blank" rel="noopener noreferrer">Kontak 157 OJK ↗</a></li>
+            <li><a href="https://aduankonten.id" target="_blank" rel="noopener noreferrer">Aduan Konten Kominfo ↗</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <strong class="footer-heading">Prinsip Keamanan</strong>
+          <ul class="footer-links">
+            <li><span>Rahasiakan Kode OTP</span></li>
+            <li><span>Waspadai Ekstensi APK</span></li>
+            <li><span>Verifikasi Kontak Resmi</span></li>
+            <li><span>Tanpa Pengumpulan Akun</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Digital Guardian. Hak Cipta Dilindungi Undang-Undang. Dirancang dengan prinsip edukasi interaktif deterministik.</p>
+        <div class="footer-bottom-links">
+          <a href="#hero">Kembali ke Atas ↑</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
