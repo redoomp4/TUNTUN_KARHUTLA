@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGuardian } from '../context/GuardianContext.jsx';
 import { DETECTIVE_CASES } from '../data/detectiveCases.js';
+import GuardianLanyard from './GuardianLanyard.jsx';
 
 export default function GuardianProfileWorkspace({ hidden }) {
   const { sessionState, preparedness, resetFullSession } = useGuardian();
@@ -82,12 +83,27 @@ export default function GuardianProfileWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
+        {/* Top Creative Telemetry Strip */}
+        <div className="creative-strip-bar dark-strip">
+          <div className="strip-item">
+            <span className="strip-dot dot-green" />
+            <span>Sesi Aktif: <strong>{sessionState.sessionId}</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Status: <strong>{statusTitle}</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Total Pindai: <strong>{(sessionState.scanHistory || []).length} item</strong></span>
+          </div>
+          <span className="widget-mini-tag">Lanyard 3D + Hologram Aktif</span>
+        </div>
+
         <div className="profile-closing-grid" id="guardian-profile-card">
           {/* Left Column: Session Score & Summary */}
           <div className="profile-summary-col">
-            <h2 id="profile-view-heading" className="section-title on-field">Guardian Profile</h2>
+            <h2 id="profile-view-heading" className="section-title on-field">Profil &amp; Lanyard ID</h2>
             <p className="section-description on-field-secondary">
-              Ringkasan kesiapsiagaan berdasarkan keputusan Anda di Scam Simulator dan ketelitian investigasi di Scam Detective pada sesi ini.
+              Evaluasi kesiapsiagaan sesi Anda beserta kartu ID Lanyard interaktif yang dapat dikustomisasi dan diunduh.
             </p>
 
             <div className="profile-score-block">
@@ -132,6 +148,15 @@ export default function GuardianProfileWorkspace({ hidden }) {
                 Atur ulang seluruh sesi
               </button>
             </div>
+
+            <GuardianLanyard
+              sessionId={sessionState.sessionId}
+              score={preparedness.hasData ? preparedness.avgScore : '--'}
+              tier={preparedness.tier}
+              safeDecisions={sessionState.simulator?.safeDecisions || 0}
+              scanCount={(sessionState.scanHistory || []).length}
+              detDoneCount={detDoneCount}
+            />
           </div>
 
           {/* Right Column: Ruled Breakdown List */}

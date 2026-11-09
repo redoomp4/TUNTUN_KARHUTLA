@@ -8,18 +8,20 @@
  * - Deterministic Guardrail Engine (`evaluateUserDefenseResponse`) is ALWAYS the
  *   sole authority for scoring and safety evaluation.
  * - Hybrid AI Layer (`requestHybridScammerReply`) generates dynamic conversational
- *   responses via a keyless public LLM endpoint with automatic timeout and
- *   100% reliable local fallback (NFR-09 Graceful Degradation).
+ *   responses via the free OpenAI-compatible Pollinations endpoint
+ *   (`https://text.pollinations.ai/openai`) + optional user Gemini/Groq key, with
+ *   a context-aware local synthesizer fallback (NFR-09 Graceful Degradation).
  */
 
 export const SPARRING_PERSONAS = {
   hackedFriend: {
     id: 'hackedFriend',
-    label: 'Teman pinjam uang mendadak (WA dibajak)',
-    contactName: 'Raka - Teman Kuliah (Akun Dibajak)',
+    label: 'Teman Pinjam Uang (WA Dibajak)',
+    shortTag: 'Modus WA Dibajak',
+    contactName: 'Raka: Teman Kuliah (WA Dibajak)',
     contactAvatar: 'RK',
     openingMessage:
-      'Bro, tolong banget pinjam Rp 1.500.000 sekarang. M-banking gue lagi terblokir, harus bayar rumah sakit darurat. Transfer ke rekening BRI 0419-01-99281 a.n. Dedi Pratama dulu ya, nanti malam gue ganti.',
+      'Bro, tolong banget pinjam Rp 1.500.000 sekarang. M-banking gue terblokir, harus deposit IGD rumah sakit darurat. Transfer ke BRI 0419-01-99281 a.n. Dedi Pratama dulu ya, malam ini gue ganti.',
     localFallbacks: [
       'Tolong banget bro, ini lagi di kasir IGD harus deposit sekarang. Nanti gue telepon kalau urusan udah beres, transfer dulu aja ke rekening Dedi Pratama itu ya.',
       'HP gue kameranya lagi rusak jadi gak bisa video call. Udah kirim aja dulu Rp 1,5 juta atau Rp 500 ribu dulu, darurat banget ini.',
@@ -28,7 +30,8 @@ export const SPARRING_PERSONAS = {
   },
   fakeCourier: {
     id: 'fakeCourier',
-    label: 'Kurir mendesak buka berkas .APK',
+    label: 'Kurir File .APK Resi Palsu',
+    shortTag: 'Modus Malware .APK',
     contactName: 'Kurir Gudang Ekspedisi',
     contactAvatar: 'KG',
     openingMessage:
@@ -41,7 +44,8 @@ export const SPARRING_PERSONAS = {
   },
   fakeBankCs: {
     id: 'fakeBankCs',
-    label: 'CS bank meminta kode OTP pembatalan',
+    label: 'CS Bank Minta Kode OTP',
+    shortTag: 'Modus Phishing OTP',
     contactName: 'Unit Keamanan Transaksi Bank',
     contactAvatar: 'CS',
     openingMessage:
@@ -127,72 +131,169 @@ export function evaluateUserDefenseResponse(userReply) {
 }
 
 /**
- * Generates dynamic scammer dialogue using Hybrid AI with automatic timeout
- * and deterministic offline fallback (satisfies NFR-09).
+ * Context-aware deterministic conversational synthesizer so even when offline or
+ * rate-limited, the chatbot responds directly to the user's exact words and questions.
  *
  * @param {string} personaKey
  * @param {number} turnIndex
  * @param {string} userMessage
- * @param {{ forceOffline?: boolean }} [options]
- * @returns {Promise<{ replyText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK' }>}
+ * @returns {string}
+ */
+export function buildSmartContextualScammerReply(personaKey, turnIndex, userMessage = '') {
+  const lower = userMessage.toLowerCase();
+  const persona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
+
+  if (personaKey === 'hackedFriend') {
+    if (/(video\s*call|vc|telepon|telpon|suara|muka)/i.test(lower)) {
+      return 'Waduh bro, di ruang tindakan IGD lagi gak boleh berisik dan kamera depan HP gue retak parah. Udah percaya aja sama gue, transfer dulu ke BRI Dedi Pratama itu ya, darurat banget!';
+    }
+    if (/(dedi\s*pratama|beda\s*nama|rekening\s*siapa|bukan\s*nama\s*lo)/i.test(lower)) {
+      return 'Itu rekening perawat bagian administrasi IGD-nya bro, soalnya m-banking atas nama gue lagi ke-reset. Tolong banget talangin Rp 1,5 juta sekarang, jam 8 malam gue ganti lebih.';
+    }
+    if (/(rumah\s*sakit\s*mana|rs\s*mana|sakit\s*apa|siapa\s*yang\s*sakit)/i.test(lower)) {
+      return 'Ini di RS Medika Sentral, adek gue jatuh dari motor harus langsung tindakan sekarang. Kasirnya nunggu bukti transfer Rp 1,5 juta dalam 5 menit, tolong bantu dulu bro!';
+    }
+    if (/(penipu|bajak|hack|scam|bohong|lapor)/i.test(lower)) {
+      return 'Astaga tega banget lo nuduh gue penipu pas lagi musibah begini. Kalau gak mau bantu bilang aja bro, gak usah nuduh akun dibajak!';
+    }
+  }
+
+  if (personaKey === 'fakeCourier') {
+    if (/(foto\s*biasa|jpg|png|screenshot|jangan\s*apk|tidak\s*mau\s*apk)/i.test(lower)) {
+      return 'Dari sistem scanner gudang pusat otomatis ter-export jadi file aplikasi .APK Kak, tidak bisa foto JPG biasa. Kalau Kakak tidak buka dan klik Izinkan SMS sekarang, paket terpaksa kami retur.';
+    }
+    if (/(nomor\s*resi|no\s*resi|cek\s*sendiri|aplikasi\s*resmi|web\s*resmi)/i.test(lower)) {
+      return 'Resinya belum terbaca di aplikasi publik karena barcode-nya terkelupas Kak. Makanya wajib buka file Cek_Resi_Pengiriman.pdf.apk yang saya kirim barusan untuk konfirmasi manual.';
+    }
+    if (/(satpam|taruh\s*saja|titip|retur\s*saja)/i.test(lower)) {
+      return 'Tidak bisa dititip satpam Kak, harus ada tanda tangan digital lewat aplikasi resi .APK yang saya kirim tadi sebelum kurir berangkat.';
+    }
+  }
+
+  if (personaKey === 'fakeBankCs') {
+    if (/(call\s*center|1500888|14017|14000|157|kantor\s*cabang|aplikasi\s*resmi)/i.test(lower)) {
+      return 'Antrean telepon Call Center sedang penuh Pak/Bu, dan transaksi Rp 8.900.000 ini akan otomatis terdebet dalam 90 detik jika Anda tidak menyebutkan 6 digit kode OTP pembatalan di chat ini.';
+    }
+    if (/(tidak\s*akan|rahasia|jangan\s*kasih\s*otp|penipu|bank\s*tidak\s*minta\s*otp)/i.test(lower)) {
+      return 'Ini bukan OTP transaksi Pak/Bu, melainkan Kode Otorisasi Pembatalan (Void OTP) dari sistem pusat. Jika tidak disebutkan sekarang, dana Rp 8.900.000 tidak dapat kami bekukan.';
+    }
+    if (/(\d{6}|\d{4})/i.test(lower)) {
+      return 'Kode sedang kami masukkan ke terminal... Tunggu sebentar, sistem meminta 6 digit kode OTP kedua yang baru saja masuk ke SMS Anda untuk menyelesaikan pembatalan.';
+    }
+  }
+
+  const fallbackList = persona.localFallbacks;
+  return fallbackList[turnIndex % fallbackList.length];
+}
+
+/**
+ * Extracts clean text from Pollinations / OpenAI JSON or plain-text responses.
+ * @param {string} rawBody
+ * @returns {string}
+ */
+function parseAiResponseText(rawBody) {
+  if (!rawBody) return '';
+  const trimmed = rawBody.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const content = parsed?.choices?.[0]?.message?.content;
+      if (typeof content === 'string' && content.trim()) {
+        return content.trim();
+      }
+    } catch {
+      return '';
+    }
+  }
+  if (/free limit reached|402 payment required|error|bad gateway/i.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
+}
+
+/**
+ * Generates dynamic scammer dialogue using Free Hybrid AI (`https://text.pollinations.ai/openai`)
+ * with conversation history and automatic contextual fallback (satisfies NFR-09).
+ *
+ * @param {string} personaKey
+ * @param {number} turnIndex
+ * @param {string} userMessage
+ * @param {{ forceOffline?: boolean, history?: Array<{sender: string, text: string}> }} [options]
+ * @returns {Promise<{ replyText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK', providerName?: string }>}
  */
 export async function requestHybridScammerReply(personaKey, turnIndex, userMessage, options = {}) {
   const persona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
-  const fallbackList = persona.localFallbacks;
-  const fallbackReply = fallbackList[turnIndex % fallbackList.length];
+  const smartFallback = buildSmartContextualScammerReply(personaKey, turnIndex, userMessage);
 
   if (options.forceOffline) {
     return {
-      replyText: fallbackReply,
-      source: 'LOCAL_FALLBACK'
+      replyText: smartFallback,
+      source: 'LOCAL_FALLBACK',
+      providerName: 'Mesin Kontekstual Lokal (NFR-09)'
     };
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3800);
+  const timeoutId = setTimeout(() => controller.abort(), 8500);
 
   try {
     const systemPrompt = [
-      `Kamu berperan sebagai karakter simulasi edukasi keamanan siber bernama "${persona.contactName}".`,
-      `Konteks simulasi: ${persona.label}.`,
-      `Balas pesan pengguna berikut dalam 1-2 kalimat singkat bahasa Indonesia untuk menguji ketahanan pengguna terhadap bujukan rekayasa sosial.`,
-      `Jangan pernah menyertakan tautan aktif berbahaya. Tetap dalam konteks simulasi edukatif.`
+      `Kamu sedang berperan sebagai lawan latihan (roleplay) bernama "${persona.contactName}" dalam simulator edukasi keamanan siber TUNTUN.`,
+      `Skenario: ${persona.label}. Pesan pembuka kamu tadi: "${persona.openingMessage}".`,
+      `Aturan: Balas langsung kalimat pengguna berikut dalam 1-2 kalimat bahasa Indonesia yang natural dan mendesak sesuai peranmu (misalnya beralasan kamera rusak jika diminta video call, atau mendesak waktu habis).`,
+      `Jangan gunakan emoji, jangan kirim link aktif berbahaya, dan jangan keluar dari karakter.`
     ].join(' ');
 
-    const response = await fetch('https://text.pollinations.ai/', {
+    const historyMessages = (options.history || []).slice(-4).map((m) => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text
+    }));
+
+    const response = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
+        model: 'openai-fast',
         messages: [
           { role: 'system', content: systemPrompt },
+          ...historyMessages,
           { role: 'user', content: userMessage }
-        ],
-        model: 'openai',
-        seed: 42
+        ]
       })
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      return { replyText: fallbackReply, source: 'LOCAL_FALLBACK' };
+      return {
+        replyText: smartFallback,
+        source: 'LOCAL_FALLBACK',
+        providerName: 'Mesin Kontekstual Lokal (NFR-09)'
+      };
     }
 
-    const rawText = (await response.text()).trim();
-    if (!rawText || rawText.length < 10 || rawText.length > 450) {
-      return { replyText: fallbackReply, source: 'LOCAL_FALLBACK' };
+    const rawBody = await response.text();
+    const cleaned = parseAiResponseText(rawBody);
+    if (!cleaned || cleaned.length < 8 || cleaned.length > 550) {
+      return {
+        replyText: smartFallback,
+        source: 'LOCAL_FALLBACK',
+        providerName: 'Mesin Kontekstual Lokal (NFR-09)'
+      };
     }
 
     return {
-      replyText: rawText,
-      source: 'AI_HYBRID'
+      replyText: cleaned,
+      source: 'AI_HYBRID',
+      providerName: 'Pollinations OpenAI Gratis (Aktif)'
     };
   } catch {
     clearTimeout(timeoutId);
     return {
-      replyText: fallbackReply,
-      source: 'LOCAL_FALLBACK'
+      replyText: smartFallback,
+      source: 'LOCAL_FALLBACK',
+      providerName: 'Mesin Kontekstual Lokal (NFR-09)'
     };
   }
 }
@@ -255,4 +356,97 @@ export function generateSafeVerificationReplies(rawText = '') {
       reply: 'Hati-hati jika ada tawaran kerja paruh waktu yang meminta uang deposit atau pesan teman meminjam uang mendadak ke rekening beda nama. Wajib video call terlebih dahulu.'
     }
   ];
+}
+
+/**
+ * Generates a deterministic local contextual synthesis when the external AI API
+ * is offline or unreachable (NFR-09 compliance).
+ *
+ * @param {string} rawText
+ * @param {object} heuristicResult
+ * @returns {string}
+ */
+export function buildDeterministicContextualSummary(rawText = '', heuristicResult = {}) {
+  const score = heuristicResult?.score ?? 0;
+  const isPromo = Boolean(heuristicResult?.isTelcoPromoBroadcast);
+  const findings = (heuristicResult?.findings || []).filter(f => f.severity !== 'safe');
+
+  if (isPromo && score < 35) {
+    return 'Pesan ini berpola broadcast iklan operator seluler resmi (myads.id & STOP 8000), bukan pencurian OTP/APK. Jika tertarik pada promo tersebut, cek langsung di aplikasi resmi bank.';
+  }
+
+  if (score >= 60) {
+    const titles = findings.map(f => f.title.toLowerCase()).join(', ');
+    return `Bahaya Tinggi (Skor ${score}/100): Terdeteksi pola ${titles || 'manipulasi tautan dan APK berbahaya'}. Abaikan klaim hadiah/penarikan dana, jangan klik tautan, dan jangan unduh file .APK.`;
+  }
+
+  if (score >= 25) {
+    return `Waspada (Skor ${score}/100): Terdapat indikator mencurigakan. Jangan gunakan nomor atau tautan di dalam pesan; verifikasi langsung ke kanal resmi.`;
+  }
+
+  return 'Aman (Skor 0/100): Tidak ditemukan pola phishing, APK ilegal, atau pemerasan OTP. Tetap pastikan transaksi hanya di aplikasi resmi.';
+}
+
+/**
+ * Hybrid AI Deep Message Analyzer (AI Second-Opinion + Deterministic Guardrail).
+ * Uses free OpenAI-compatible Pollinations endpoint (`https://text.pollinations.ai/openai`)
+ * while strictly preserving the deterministic score from heuristicEngine.js (prompt.MD Rule #5).
+ *
+ * @param {string} rawText
+ * @param {object} heuristicResult
+ * @returns {Promise<{ summaryText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK' }>}
+ */
+export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
+  const localSummary = buildDeterministicContextualSummary(rawText, heuristicResult);
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7500);
+
+  try {
+    const systemPrompt = [
+      'Anda adalah Analis Keamanan Siber TUNTUN.',
+      `Skor deterministik pesan ini: ${heuristicResult?.score ?? 0}/100 (${heuristicResult?.verdictBadgeText || 'Netral'}).`,
+      'Jelaskan dalam maksimal 2 kalimat singkat bahasa Indonesia tanpa emoji: apa motif pesan ini dan langkah aman bagi penerima.'
+    ].join(' ');
+
+    const response = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'openai-fast',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analisis pesan ini:\n"${rawText}"` }
+        ]
+      })
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+    }
+
+    const rawBody = await response.text();
+    const cleaned = parseAiResponseText(rawBody);
+    if (!cleaned || cleaned.length < 15 || cleaned.length > 520) {
+      return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+    }
+
+    return {
+      summaryText: cleaned,
+      source: 'AI_HYBRID'
+    };
+  } catch {
+    clearTimeout(timeoutId);
+    return {
+      summaryText: localSummary,
+      source: 'LOCAL_FALLBACK'
+    };
+  }
 }

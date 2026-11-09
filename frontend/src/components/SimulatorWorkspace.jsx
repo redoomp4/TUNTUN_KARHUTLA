@@ -8,18 +8,25 @@ import {
 } from '../engines/hybridAiEngine.js';
 
 export default function SimulatorWorkspace({ hidden }) {
-  const { sessionState, recordSimulatorDecision, setSimulatorScenario, navigateToView } = useGuardian();
+  const {
+    sessionState,
+    recordSimulatorDecision,
+    restartSimulatorScenario,
+    setSimulatorScenario,
+    navigateToView
+  } = useGuardian();
   const activeKey = sessionState.simulator?.activeScenario || 'courier';
   const scenario = SIMULATOR_SCENARIOS[activeKey] || SIMULATOR_SCENARIOS.courier;
 
   const [stepIndex, setStepIndex] = useState(0);
   const [score, setScore] = useState(100);
+  const [attemptNum, setAttemptNum] = useState(1);
   const [riskLabel, setRiskLabel] = useState(scenario.initialRisk);
   const [selectedChoice, setSelectedChoice] = useState(null);
   const chatScrollRef = useRef(null);
   const sparringScrollRef = useRef(null);
 
-  // Hybrid AI Dynamic Sparring State (prompt.MD Rule #5 & NFR-09)
+  // Free Hybrid AI Dynamic Sparring State
   const [personaKey, setPersonaKey] = useState('hackedFriend');
   const activePersona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
   const [sparringMessages, setSparringMessages] = useState([
@@ -29,9 +36,8 @@ export default function SimulatorWorkspace({ hidden }) {
   const [sparringTurn, setSparringTurn] = useState(0);
   const [sparringScore, setSparringScore] = useState(100);
   const [sparringLoading, setSparringLoading] = useState(false);
-  const [forceOffline, setForceOffline] = useState(false);
   const [lastGuardrailEval, setLastGuardrailEval] = useState(null);
-  const [lastEngineSource, setLastEngineSource] = useState('SIAP');
+  const [lastEngineSource, setLastEngineSource] = useState('Pollinations OpenAI Gratis (Siap)');
 
   const handleSelectPersona = (key) => {
     const p = SPARRING_PERSONAS[key] || SPARRING_PERSONAS.hackedFriend;
@@ -41,7 +47,7 @@ export default function SimulatorWorkspace({ hidden }) {
     setSparringTurn(0);
     setSparringScore(100);
     setLastGuardrailEval(null);
-    setLastEngineSource('SIAP');
+    setLastEngineSource('Pollinations OpenAI Gratis (Siap)');
   };
 
   const handleSendSparringReply = async (customText) => {
@@ -54,13 +60,14 @@ export default function SimulatorWorkspace({ hidden }) {
     setSparringScore(prev => Math.max(0, Math.min(100, prev + evalResult.scoreDelta)));
     recordSimulatorDecision(evalResult.verdict === 'DANGEROUS' || evalResult.verdict === 'RISKY', null, null);
 
-    setSparringMessages(prev => [...prev, { sender: 'user', text: textToSend }]);
+    const updatedHistory = [...sparringMessages, { sender: 'user', text: textToSend }];
+    setSparringMessages(updatedHistory);
     setSparringInput('');
     setSparringLoading(true);
 
-    // 2. Hybrid AI Dynamic Response with Automatic NFR-09 Local Fallback
+    // 2. Free Cloud AI Dynamic Response (https://text.pollinations.ai/openai) + Contextual Fallback
     const aiReply = await requestHybridScammerReply(personaKey, sparringTurn, textToSend, {
-      forceOffline
+      history: updatedHistory
     });
     setSparringMessages(prev => [
       ...prev,
@@ -68,8 +75,8 @@ export default function SimulatorWorkspace({ hidden }) {
     ]);
     setLastEngineSource(
       aiReply.source === 'AI_HYBRID'
-        ? 'Dialog Dinamis AI Aktif'
-        : 'Fallback Deterministik Lokal (NFR-09)'
+        ? 'Cloud AI Gratis Aktif (OpenAI)'
+        : 'Mesin Kontekstual Pintar (NFR-09)'
     );
     setSparringTurn(prev => prev + 1);
     setSparringLoading(false);
@@ -97,8 +104,10 @@ export default function SimulatorWorkspace({ hidden }) {
   }, [stepIndex, selectedChoice]);
 
   const handleRestart = () => {
+    restartSimulatorScenario(activeKey);
     setStepIndex(0);
     setScore(100);
+    setAttemptNum(prev => prev + 1);
     setRiskLabel(scenario.initialRisk);
     setSelectedChoice(null);
   };
@@ -115,7 +124,7 @@ export default function SimulatorWorkspace({ hidden }) {
       choice.consequence === 'ELEVATED';
 
     const completedKey = choice.nextStep === null ? activeKey : null;
-    recordSimulatorDecision(isRisky, completedKey, nextScore);
+    recordSimulatorDecision(isRisky, completedKey, nextScore, activeKey);
   };
 
   const handleNextStep = () => {
@@ -152,11 +161,32 @@ export default function SimulatorWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
+        {/* Top Creative Telemetry Strip */}
+        <div className="creative-strip-bar dark-strip">
+          <div className="strip-item">
+            <span className="strip-dot dot-green" />
+            <span>Mode: <strong>Simulasi Interaktif &amp; Chatbot AI Gratis</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Skor Skenario: <strong>{score}/100</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Skor Chatbot AI: <strong>{sparringScore}/100</strong></span>
+          </div>
+          <button
+            type="button"
+            className="strip-lanyard-pill"
+            onClick={() => navigateToView('profile')}
+          >
+            Lihat Lanyard ID Sesi
+          </button>
+        </div>
+
         <div className="section-intro-row">
           <div className="section-intro-copy">
-            <h2 id="sim-heading" className="section-title on-field">Scam Simulator</h2>
+            <h2 id="sim-heading" className="section-title on-field">Simulasi Keputusan</h2>
             <p className="section-description on-field-secondary">
-              Pilih skenario dan tentukan respons Anda terhadap pesan pelaku. Setiap keputusan mengubah arah percakapan dan menampilkan dampak nyata dari pilihan tersebut.
+              Pilih skenario dan uji keputusan Anda menghadapi modus penipuan populer.
             </p>
           </div>
 
@@ -176,7 +206,7 @@ export default function SimulatorWorkspace({ hidden }) {
                   type="button"
                   onClick={() => setSimulatorScenario(scen.id)}
                 >
-                  {scen.tabLabel}{isCompleted ? ' (Selesai)' : ''}
+                  {scen.tabLabel}{isCompleted ? ' ✓' : ''}
                 </button>
               );
             })}
@@ -184,29 +214,32 @@ export default function SimulatorWorkspace({ hidden }) {
         </div>
 
         <div id="sim-workbench" className="sim-container" role="region" aria-live="polite">
-          {/* Left Sidebar: Scenario Context & Ruled Metrics */}
+          {/* Left Sidebar: Compact Info Widgets */}
           <div className="sim-sidebar">
-            <div className="sim-meta-box">
-              <span className="meta-label">Konteks skenario</span>
+            <div className="dark-info-widget">
+              <div className="widget-head-row">
+                <span className="meta-label">Skenario Aktif</span>
+                <span className="widget-mini-tag">Sesi #{attemptNum}</span>
+              </div>
               <h3 id="sim-scenario-title" className="meta-value">{scenario.title}</h3>
               <p id="sim-scenario-desc" className="meta-desc">{scenario.desc}</p>
             </div>
 
             <div className="sim-status-box">
               <div className="status-row">
-                <span>Tingkat risiko</span>
+                <span>Risiko</span>
                 <span id="sim-risk-badge" className={getRiskBadgeClass(riskLabel)}>
                   {riskLabel}
                 </span>
               </div>
               <div className="status-row">
-                <span>Tahap percakapan</span>
+                <span>Tahap</span>
                 <span id="sim-step-indicator">
-                  Langkah {stepIndex + 1} dari {scenario.steps.length}
+                  Langkah {stepIndex + 1} / {scenario.steps.length}
                 </span>
               </div>
               <div className="status-row">
-                <span>Skor skenario</span>
+                <span>Skor</span>
                 <span id="sim-score-indicator" className="score-num">
                   {score} / 100
                 </span>
@@ -263,7 +296,7 @@ export default function SimulatorWorkspace({ hidden }) {
             </div>
 
             <div className="sim-actions-area" id="sim-actions-panel" hidden={Boolean(selectedChoice)}>
-              <span className="actions-prompt" id="sim-actions-title">Pilih respons Anda</span>
+              <span className="actions-prompt" id="sim-actions-title">Pilih tindakan Anda:</span>
               <div className="sim-choices-grid" id="sim-choices-container">
                 {currentStep.choices.map((choice, idx) => (
                   <button
@@ -296,8 +329,8 @@ export default function SimulatorWorkspace({ hidden }) {
                   onClick={handleNextStep}
                 >
                   {selectedChoice && selectedChoice.nextStep === null
-                    ? 'Ulangi skenario ini'
-                    : 'Lanjutkan percakapan'}
+                    ? 'Ulangi skenario'
+                    : 'Lanjutkan'}
                 </button>
                 {selectedChoice && selectedChoice.nextStep === null && (
                   <button
@@ -309,7 +342,7 @@ export default function SimulatorWorkspace({ hidden }) {
                       setSimulatorScenario(order[nextIdx]);
                     }}
                   >
-                    Lanjut ke skenario berikutnya
+                    Skenario berikutnya
                   </button>
                 )}
               </div>
@@ -317,19 +350,19 @@ export default function SimulatorWorkspace({ hidden }) {
           </div>
         </div>
 
-        {/* Hybrid AI Dynamic Sparring Lab (prompt.MD Section 4 Rule #5 & NFR-09) */}
+        {/* Free AI Chatbot Sparring Lab (No Checkboxes — Pure Information Widgets) */}
         <div className="sparring-lab-wrap">
           <div className="section-intro-row sparring-header-row">
             <div className="section-intro-copy">
               <h3 className="section-title on-field sparring-title">
-                Latihan Respons Ketik Mandiri (AI Hibrida)
+                Chatbot Latihan Pertahanan (AI Gratis)
               </h3>
               <p className="section-description on-field-secondary">
-                Ketik sendiri kalimat balasan Anda menghadapi bujukan penipu. Dialog lawan bicara dibangkitkan secara dinamis oleh AI dengan fallback deterministik lokal (NFR-09), sedangkan penilaian keamanan tetap ditentukan 100% oleh aturan deterministik.
+                Ketik balasan Anda secara bebas untuk menguji ketahanan menghadapi penipu AI.
               </p>
             </div>
 
-            <div className="scenario-nav" role="tablist" aria-label="Pilih Persona Lawan Bicara">
+            <div className="scenario-nav" role="tablist" aria-label="Pilih Lawan Chatbot AI">
               {Object.values(SPARRING_PERSONAS).map((p) => (
                 <button
                   key={p.id}
@@ -346,44 +379,53 @@ export default function SimulatorWorkspace({ hidden }) {
           </div>
 
           <div className="sim-container">
+            {/* Left Sidebar: Pure Information Widgets (Zero Checkboxes) */}
             <div className="sim-sidebar">
-              <div className="sim-meta-box">
-                <span className="meta-label">Arsitektur penilaian hibrida</span>
+              <div className="dark-info-widget">
+                <div className="widget-head-row">
+                  <span className="meta-label">Target Latihan</span>
+                  <span className="widget-mini-tag">{activePersona.shortTag}</span>
+                </div>
                 <h4 className="meta-value">{activePersona.contactName}</h4>
                 <p className="meta-desc">
-                  Uji ketahanan Anda menolak permintaan transfer darurat, pemasangan .APK, atau kode OTP menggunakan kalimat Anda sendiri.
+                  Tolak permintaan transfer darurat, file .APK, atau kode OTP dengan kalimat Anda sendiri.
                 </p>
               </div>
 
-              <div className="sim-status-box">
-                <div className="status-row">
-                  <span>Status mesin dialog</span>
-                  <span className="risk-badge risk-normal">{lastEngineSource}</span>
+              {/* Information Widget: AI Engine & Guardrail Telemetry */}
+              <div className="dark-info-widget">
+                <div className="widget-head-row">
+                  <span className="meta-label">Info Mesin Chatbot</span>
+                  <span className="strip-dot dot-green" />
                 </div>
-                <div className="status-row">
-                  <span>Skor pertahanan dialog</span>
-                  <span className="score-num">{sparringScore} / 100</span>
-                </div>
-                <div className="status-row">
-                  <span>Penentu skor</span>
-                  <span className="score-num">Aturan Deterministik</span>
+                <div className="sim-status-box" style={{ border: 'none', padding: 0 }}>
+                  <div className="status-row">
+                    <span>API AI Gratis</span>
+                    <span className="risk-badge risk-safe">{lastEngineSource}</span>
+                  </div>
+                  <div className="status-row">
+                    <span>Skor Pertahanan</span>
+                    <span className="score-num">{sparringScore} / 100</span>
+                  </div>
+                  <div className="status-row">
+                    <span>Penentu Skor</span>
+                    <span className="score-num">Guardrail Deterministik</span>
+                  </div>
                 </div>
               </div>
 
-              <label className="check-step-row on-field-secondary">
-                <input
-                  type="checkbox"
-                  checked={forceOffline}
-                  onChange={(e) => setForceOffline(e.target.checked)}
-                />
-                <span>Uji simulasi gangguan API / Mode Fallback Lokal (NFR-09)</span>
-              </label>
-
-              {lastGuardrailEval && (
+              {lastGuardrailEval ? (
                 <div className="sim-feedback-box sparring-eval-card">
                   <div className="feedback-badge">{lastGuardrailEval.badgeText}</div>
                   <h4 className="feedback-headline">{lastGuardrailEval.headline}</h4>
                   <p className="feedback-text">{lastGuardrailEval.explanation}</p>
+                </div>
+              ) : (
+                <div className="dark-info-widget">
+                  <span className="meta-label">Tips Pertahanan Cepat</span>
+                  <p className="meta-desc">
+                    Minta verifikasi <strong>video call</strong>, alihkan ke <strong>Call Center resmi</strong>, dan tolak mentah-mentah file <strong>.APK</strong> maupun <strong>OTP</strong>.
+                  </p>
                 </div>
               )}
             </div>
@@ -394,7 +436,7 @@ export default function SimulatorWorkspace({ hidden }) {
                   <div className="contact-avatar" aria-hidden="true">{activePersona.contactAvatar}</div>
                   <div>
                     <strong className="contact-name">{activePersona.contactName}</strong>
-                    <span className="contact-status">Dialog Dinamis Hibrida</span>
+                    <span className="contact-status">Chatbot AI Gratis • Aktif</span>
                   </div>
                 </div>
                 <button
@@ -402,7 +444,7 @@ export default function SimulatorWorkspace({ hidden }) {
                   className="btn btn-secondary-dark btn-sm"
                   onClick={() => handleSelectPersona(personaKey)}
                 >
-                  Reset dialog
+                  Reset Chat
                 </button>
               </div>
 
@@ -415,55 +457,54 @@ export default function SimulatorWorkspace({ hidden }) {
                     <span className="bubble-text">{m.text}</span>
                     <span className="bubble-meta">
                       {m.sender === 'user'
-                        ? 'Balasan Anda'
+                        ? 'Anda'
                         : m.source === 'AI_HYBRID'
-                          ? 'Diterima (AI Dinamis)'
-                          : 'Diterima (Simulasi)'}
+                          ? 'AI Gratis (OpenAI)'
+                          : 'Chatbot Simulasi'}
                     </span>
                   </div>
                 ))}
                 {sparringLoading && (
                   <div className="chat-bubble bubble-incoming">
-                    <span className="bubble-text">Menyusun respons lawan bicara...</span>
+                    <span className="bubble-text">AI sedang mengetik balasan...</span>
                   </div>
                 )}
               </div>
 
               <div className="sim-actions-area">
-                <span className="actions-prompt">Ketik respons pertahanan Anda atau uji skenario respons cepat:</span>
                 <div className="preset-buttons sparring-quick-Chips">
                   <button
                     type="button"
                     className="btn btn-secondary-dark btn-sm"
                     onClick={() =>
                       handleSendSparringReply(
-                        'Ayo kita video call 10 detik sekarang untuk verifikasi, saya tidak transfer ke rekening beda nama.'
+                        'Ayo video call 10 detik sekarang untuk bukti, saya tidak transfer ke rekening beda nama.'
                       )
                     }
                   >
-                    Uji pertahanan tepat (Video Call)
+                    Tantang Video Call
                   </button>
                   <button
                     type="button"
                     className="btn btn-secondary-dark btn-sm"
                     onClick={() =>
                       handleSendSparringReply(
-                        'Saya tidak akan memberikan kode OTP atau menginstal file .APK. Saya cek langsung lewat Call Center resmi.'
+                        'Saya tidak mau buka file .APK atau kasih kode OTP. Saya cek langsung ke Call Center resmi.'
                       )
                     }
                   >
-                    Uji tolak OTP/APK & cek Call Center
+                    Tolak APK/OTP &amp; Cek Resmi
                   </button>
                   <button
                     type="button"
                     className="btn btn-secondary-dark btn-sm"
                     onClick={() =>
                       handleSendSparringReply(
-                        'Ini kode OTP saya 482910, tolong segera diproses agar rekening saya tidak diblokir.'
+                        'Ini kode OTP saya 482910, tolong segera dibatalkan transaksinya.'
                       )
                     }
                   >
-                    Uji respons berbahaya (bocor OTP)
+                    Simulasi Bocor OTP
                   </button>
                 </div>
 
@@ -479,14 +520,14 @@ export default function SimulatorWorkspace({ hidden }) {
                     className="sparring-text-input"
                     value={sparringInput}
                     onChange={(e) => setSparringInput(e.target.value)}
-                    placeholder="Ketik balasan Anda di sini (misal: Ayo video call dulu / Saya cek di aplikasi resmi)..."
+                    placeholder="Ketik balasan Anda (misal: Ayo video call dulu / Rekening siapa itu?)..."
                   />
                   <button
                     type="submit"
                     className="btn btn-primary"
                     disabled={sparringLoading || !sparringInput.trim()}
                   >
-                    Kirim Balasan
+                    Kirim
                   </button>
                 </form>
               </div>

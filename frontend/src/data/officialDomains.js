@@ -1,5 +1,5 @@
 /**
- * @fileoverview Authoritative Domain Whitelist, Suspicious TLDs, and Preset Samples
+ * @fileoverview Authoritative Domain Whitelist, Telco Promo Domains, Suspicious TLDs, and Preset Samples
  * @module data/officialDomains
  */
 
@@ -11,11 +11,17 @@ export const OFFICIAL_DOMAINS = [
   'bni.co.id',
   'bankbsi.co.id',
   'bsi.co.id',
+  'bankmega.com',
+  'cimbniaga.co.id',
+  'btn.co.id',
+  'danamon.co.id',
+  'permatabank.com',
   'ojk.go.id',
   'bi.go.id',
   'pajak.go.id',
   'beacukai.go.id',
   'kominfo.go.id',
+  'komdigi.go.id',
   'cekrekening.id',
   'patrolisiber.id',
   'jet.co.id',
@@ -27,8 +33,15 @@ export const OFFICIAL_DOMAINS = [
   'gojek.com',
   'dana.id',
   'ovo.id',
+  'telkomsel.com',
   'bpjs-kesehatan.go.id',
   'bpjsketenagakerjaan.go.id'
+];
+
+export const TELCO_PROMO_DOMAINS = [
+  'myads.id',
+  'tsel.id',
+  'tsel.me'
 ];
 
 export const SUSPICIOUS_TLDS = [
@@ -48,7 +61,13 @@ export const SUSPICIOUS_TLDS = [
   '.online',
   '.my.id',
   '.sbs',
-  '.cyou'
+  '.cyou',
+  '.la',
+  '.gg',
+  '.fun',
+  '.club',
+  '.pro',
+  '.bet'
 ];
 
 export const SHORTENER_DOMAINS = [
@@ -60,7 +79,14 @@ export const SHORTENER_DOMAINS = [
   'is.gd',
   't.co',
   'rebrand.ly',
-  'shorturl.at'
+  'shorturl.at',
+  'wde.la',
+  't.ly',
+  'ln.run',
+  'heylink.me',
+  'linktr.ee',
+  'mez.ink',
+  'bio.link'
 ];
 
 export const SCANNER_PRESETS = {
@@ -72,9 +98,17 @@ export const SCANNER_PRESETS = {
     label: 'Tautan tarif bank',
     text: 'PEMBERITAHUAN RESMI BANK BCA: Tarif transaksi transfer Anda akan diubah menjadi Rp 150.000/bulan otomatis malam ini. Jika tidak setuju, segera batalkan dalam 15 menit melalui formulir: http://bca-tarif-layanan2026.vip/batal dan masukkan PIN serta kode OTP Anda.'
   },
+  judol: {
+    label: 'SMS judi & link APK',
+    text: "Situs pasti 'With-draw' dari tahun 2007\nPenarikan 'With-draw' milyarann cuma hitungan MENIT\nklik = https://wde.la/NOSVIP134\nAPK = https://wde.la/APK-1"
+  },
   job: {
     label: 'Deposit kerja paruh waktu',
     text: 'Halo Kak! Kami dari HRD Rekrutmen Mitra Shopee menawarkan pekerjaan paruh waktu Like & Subscribe YouTube. Komisi Rp 50.000 langsung cair! Untuk membuka Misi VIP komisi Rp 2.500.000, silakan transfer deposit modal awal Rp 500.000 ke rekening bendahara kami.'
+  },
+  promo: {
+    label: 'Iklan operator (MyAds)',
+    text: 'Dapatkan diskon s.d 50% spesial buat kamu! Apply kartu kredit Bank Mega, nikmati berbagai keuntungan buat makan, belanja & liburan. Cek sekarang myads.id/Y8dGE\n\nPenawaran/info ini bermanfaat? Jika tidak, Kirim STOP Bank Mega ke 8000'
   },
   safe: {
     label: 'Pesan resmi bank',

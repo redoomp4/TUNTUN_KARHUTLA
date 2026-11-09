@@ -65,12 +65,24 @@ export function GuardianProvider({ children }) {
     }));
   }, []);
 
-  const recordSimulatorDecision = useCallback((isRisky, completedScenarioKey = null, finalScore = null) => {
+  const recordSimulatorDecision = useCallback((isRisky, completedScenarioKey = null, finalScore = null, scenarioKey = null) => {
     setSessionState(prev => {
+      const targetScen = scenarioKey || completedScenarioKey || prev.simulator?.activeScenario || 'courier';
+      const scenarioLogs = { ...(prev.simulator?.scenarioLogs || {}) };
+      const currentLog = scenarioLogs[targetScen] || { safe: 0, risky: 0 };
+      scenarioLogs[targetScen] = {
+        safe: isRisky ? currentLog.safe : currentLog.safe + 1,
+        risky: isRisky ? currentLog.risky + 1 : currentLog.risky
+      };
+
+      const totalSafe = Object.values(scenarioLogs).reduce((acc, l) => acc + (l.safe || 0), 0);
+      const totalRisky = Object.values(scenarioLogs).reduce((acc, l) => acc + (l.risky || 0), 0);
+
       const nextSim = {
         ...prev.simulator,
-        safeDecisions: isRisky ? (prev.simulator.safeDecisions || 0) : (prev.simulator.safeDecisions || 0) + 1,
-        riskyDecisions: isRisky ? (prev.simulator.riskyDecisions || 0) + 1 : (prev.simulator.riskyDecisions || 0),
+        safeDecisions: totalSafe,
+        riskyDecisions: totalRisky,
+        scenarioLogs,
         completedScenarios: { ...(prev.simulator.completedScenarios || {}) }
       };
       if (completedScenarioKey && typeof finalScore === 'number') {
@@ -79,6 +91,31 @@ export function GuardianProvider({ children }) {
       return {
         ...prev,
         simulator: nextSim
+      };
+    });
+  }, []);
+
+  const restartSimulatorScenario = useCallback((scenarioKey) => {
+    setSessionState(prev => {
+      const targetScen = scenarioKey || prev.simulator?.activeScenario || 'courier';
+      const scenarioLogs = { ...(prev.simulator?.scenarioLogs || {}) };
+      delete scenarioLogs[targetScen];
+
+      const completedScenarios = { ...(prev.simulator?.completedScenarios || {}) };
+      delete completedScenarios[targetScen];
+
+      const totalSafe = Object.values(scenarioLogs).reduce((acc, l) => acc + (l.safe || 0), 0);
+      const totalRisky = Object.values(scenarioLogs).reduce((acc, l) => acc + (l.risky || 0), 0);
+
+      return {
+        ...prev,
+        simulator: {
+          ...prev.simulator,
+          safeDecisions: totalSafe,
+          riskyDecisions: totalRisky,
+          scenarioLogs,
+          completedScenarios
+        }
       };
     });
   }, []);
@@ -201,6 +238,7 @@ export function GuardianProvider({ children }) {
         recordScanToHistory,
         clearScanHistory,
         recordSimulatorDecision,
+        restartSimulatorScenario,
         setSimulatorScenario,
         saveDetectiveCaseResult,
         resetDetectiveCaseResult,

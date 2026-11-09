@@ -1,0 +1,14 @@
+{
+  "name": "tuntun-digital-guardian-backend",
+  "version": "2.0.0",
+  "description": "TUNTUN Digital Guardian — Stateless Forensic Heuristic & Free Hybrid AI Backend API",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

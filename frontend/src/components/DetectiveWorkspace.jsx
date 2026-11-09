@@ -4,7 +4,7 @@ import { DETECTIVE_CASES } from '../data/detectiveCases.js';
 import { evaluateDetectiveSubmission } from '../engines/scoringEngine.js';
 
 export default function DetectiveWorkspace({ hidden }) {
-  const { sessionState, saveDetectiveCaseResult, resetDetectiveCaseResult } = useGuardian();
+  const { sessionState, saveDetectiveCaseResult, resetDetectiveCaseResult, navigateToView } = useGuardian();
   const [activeCaseKey, setActiveCaseKey] = useState(sessionState.detective?.activeCase || 'prize');
   const [selectedIds, setSelectedIds] = useState([]);
   const [validationError, setValidationError] = useState(false);
@@ -59,11 +59,32 @@ export default function DetectiveWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
+        {/* Creative Top Strip Bar */}
+        <div className="creative-strip-bar">
+          <div className="strip-item">
+            <span className="strip-dot dot-blue" />
+            <span>Laboratorium Bukti: <strong>{currentCase.tag}</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Target Risiko: <strong>{targetRiskCount} Indikator</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Skor Kasus: <strong>{savedResult ? `${savedResult.score}/100` : 'Belum dinilai'}</strong></span>
+          </div>
+          <button
+            type="button"
+            className="strip-lanyard-pill light-pill"
+            onClick={() => navigateToView('profile')}
+          >
+            Lihat Lanyard ID
+          </button>
+        </div>
+
         <div className="section-intro-row">
           <div className="section-intro-copy">
-            <h2 id="detective-heading" className="section-title">Scam Detective</h2>
+            <h2 id="detective-heading" className="section-title">Detektif Bukti</h2>
             <p className="section-description">
-              Periksa barang bukti pesan di bawah ini dan klik bagian yang menurut Anda merupakan indikator penipuan. Hati-hati, terdapat elemen normal sebagai pengecoh.
+              Klik bagian pesan yang mencurigakan. Waspadai elemen normal sebagai pengecoh.
             </p>
           </div>
 
@@ -252,6 +273,10 @@ export default function DetectiveWorkspace({ hidden }) {
                 </div>
               )}
             </div>
+
+            <p className="nfr-telemetry-meta" style={{ marginTop: '14px' }}>
+              Prinsip FR-09: Satu tanda saja belum tentu bukti mutlak; periksa kombinasi domain, permintaan biaya, dan pengirim.
+            </p>
           </div>
         </div>
       </div>

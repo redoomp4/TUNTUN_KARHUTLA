@@ -1,209 +1,118 @@
-# 🛡️ Digital Guardian — Web Application Simulasi, Investigasi & Proteksi Penipuan Digital
+# TUNTUN: Digital Guardian
 
-> **Tema Studi Kasus:** *"Guardians of the Digital Space — Empowering Today's Generation"*  
-> **Kategori Produk:** Aplikasi Berbasis Web (*Interactive Single-Page Web Application*)  
-> **Dokumen Arsitektur & Spesifikasi Teknis Lengkap:** [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md)
-
----
-
-## 📋 Daftar Isi
-1. [Ringkasan Eksekutif & Latar Belakang Masalah](#1-ringkasan-eksekutif--latar-belakang-masalah)
-2. [Solusi & Kesesuaian dengan Studi Kasus](#2-solusi--kesesuaian-dengan-studi-kasus)
-3. [Fitur Utama Aplikasi Web (5 Modul Workspace)](#3-fitur-utama-aplikasi-web-5-modul-workspace)
-4. [Sistem Desain UI/UX (Minimalist "Software" Design System)](#4-sistem-desain-uiux-minimalist-software-design-system)
-5. [Arsitektur Kode, Struktur Proyek & Pemeliharaan](#5-arsitektur-kode-struktur-proyek--pemeliharaan)
-6. [Panduan Instalasi, Menjalankan Aplikasi & Pengujian Otomatis](#6-panduan-instalasi-menjalankan-aplikasi--pengujian-otomatis)
-7. [Matriks Ketertelusuran Kebutuhan (Requirement Traceability Matrix)](#7-matriks-ketertelusuran-kebutuhan-requirement-traceability-matrix)
+**Guardians of the Digital Space: Empowering Today's Generation**  
+Aplikasi web interaktif edukasi, forensik pesan/berkas `.APK`, simulasi bercabang, dan asisten chatbot AI gratis untuk pencegahan penipuan rekayasa sosial (*social engineering*).
 
 ---
 
-## 1. Ringkasan Eksekutif & Latar Belakang Masalah
+## 1. Arsitektur Direktori (`frontend/` & `Backend/` Terpisah)
 
-Penipuan digital (*digital scam*, *phishing*, *social engineering*, dan *malware* `.APK`) di Indonesia mengeksploitasi celah psikologis manusia: **kepanikan (urgensi semu)**, **kepatuhan terhadap otoritas palsu**, dan **iming-iming keuntungan instan**.
-
-Pendekatan edukasi konvensional yang bersifat **pasif** (artikel panjang, poster himbauan, atau daftar ciri penipuan) gagal membangun refleks pertahanan saat pengguna berhadapan langsung dengan manipulasi psikologis di dunia nyata.
-
-**Digital Guardian** hadir sebagai **Aplikasi Berbasis Web (Web Application)** interaktif yang menggabungkan tiga pilar perlindungan:
-1. **Proteksi Utilitas Harian (*Pemindai Pesan, Link & File `.APK`*)**: Memungkinkan pengguna menempelkan pesan mencurigakan dari WhatsApp/SMS/Telegram untuk dibedah secara deterministik dalam hitungan milidetik.
-2. **Pembelajaran Berbasis Pengalaman (*Scam Simulator & Scam Detective*)**: Melatih refleks pengambilan keputusan melalui simulasi percakapan bercabang (*branching state machine*) dan investigasi forensik pesan digital dengan umpan balik langsung (*instant feedback*).
-3. **Mitigasi Darurat & Evaluasi Kesiapsiagaan (*Action Guide, Generator Laporan Resmi & Guardian Profile*)**: Memandu langkah penyelamatan darurat 30 menit pertama setelah insiden, menyusun draf laporan kronologi resmi untuk Bank/OJK/Kepolisian, serta mengevaluasi skor kesiapsiagaan sesi pengguna (`0–100`).
-
----
-
-## 2. Solusi & Kesesuaian dengan Studi Kasus
-
-Seluruh fitur pada **Digital Guardian** dirancang secara presisi menjawab spesifikasi kebutuhan sistem pada dokumen studi kasus (`FR-01` s/d `FR-14`, `NFR-01` s/d `NFR-12`, dan `UC-01` s/d `UC-11`):
-
-| Masalah pada Studi Kasus | Solusi Implementasi pada Digital Guardian |
-| :--- | :--- |
-| **Edukasi pasif tidak melatih refleks saat panik** | **Scam Simulator (`#simulator`)**: Simulasi percakapan interaktif bercabang 3 modus utama (*Kurir File `.APK`*, *Phishing Tarif Bank*, *Lowongan Kerja VIP Telegram*) di mana setiap pilihan pengguna menghasilkan konsekuensi dan penjelasan edukatif instan (`FR-02`..`FR-06`). |
-| **Pengguna sulit membedakan elemen asli vs palsu pada pesan penipuan** | **Scam Detective (`#detective`)**: Investigasi forensik multi-kasus (*Undian Berhadiah*, *HRD Rekrutmen Palsu*, *Tagihan Bea Cukai*) yang dilengkapi **indikator berbahaya (*True Positive*)** sekaligus **elemen pengecoh aman (*Safe Decoy / False Positive*)** serta validasi input (`FR-07`..`FR-10`, `FR-14`). |
-| **Tidak ada tolok ukur tingkat kerentanan pengguna** | **Guardian Profile (`#profile-view`)**: Kalkulasi skor kesiapsiagaan sesi (`0–100`) secara *real-time*, pemetaan kategori kemampuan terkuat, titik rentan yang terlewat, dan rekomendasi pembelajaran spesifik (`FR-11`..`FR-13`). |
-| **Pengguna membutuhkan alat cek cepat & panduan darurat saat insiden terjadi** | **Pemindai Heuristik (`#scanner`) & Toolkit Darurat (`#guide`)**: Pemindai 7 aturan heuristik untuk mendeteksi `.APK`/URL tiruan, checklist interaktif 16 langkah dengan *progress bar*, generator draf laporan kronologi resmi, dan direktori Call Center resmi. |
-| **Privasi pengguna & kemudahan akses tanpa hambatan (*Zero-Friction*)** | **Tanpa Login / Tanpa Pengumpulan PII (`NFR-05`, `NFR-12`)**: Seluruh progres sesi disimpan secara lokal di `window.sessionStorage` (persisten saat *refresh* halaman, terhapus otomatis saat tab ditutup) dan 100% menggunakan data simulasi fiktif yang aman (`NFR-06`, `NFR-07`). |
-
----
-
-## 3. Fitur Utama Aplikasi Web (5 Modul Workspace)
-
-Aplikasi berjalan dalam **Single-Page Application (SPA) Workspace Shell** dengan bilah navigasi aplikasi terpadu (`.app-topbar`), indikator telemetri sesi *live* (`#header-session-id`, `#header-session-score`), dukungan *deep-linking* URL hash (`#scanner`, `#simulator`, `#detective`, `#guide`, `#profile-view`), serta pintasan papan ketik (`Alt+1` s/d `Alt+5`).
-
-### Modul 1 — Pemindai Pesan, Link & File `.APK` (`#scanner`)
-- **Mesin Heuristik Deterministik (Aturan `R-01` s/d `R-07`)**:
-  - `R-01` (+45 poin): Deteksi file eksekusi berbahaya & ekstensi ganda (`.pdf.apk`, `.jpg.apk`, `.exe`, permintaan izin akses SMS).
-  - `R-02` (+35 poin): Deteksi upaya pencurian kredensial rahasia (*PIN*, *Kode OTP*, *CVV*, *Password*).
-  - `R-03` (+30 poin): Deteksi permintaan transfer uang muka / deposit misi (*Advance-Fee / Task Scam*).
-  - `R-04` (+30 poin): Bedah anatomi URL untuk menangkap *typosquatting* pencatutan instansi (`bca-tarif-layanan2026.vip`), TLD berisiko tinggi (`.vip`, `.xyz`, `.top`, `.click`), dan penyingkat tautan.
-  - `R-05` (+20 poin): Deteksi manipulasi urgensi semu & ancaman kepanikan (*"dalam 15 menit"*, *"diblokir otomatis"*).
-  - `R-06` (+20 poin): Deteksi pencatutan instansi resmi yang dikirim dari nomor seluler pribadi (`+62 8xx` / `08xx`).
-  - `R-07` (+15 poin): Peringatan protokol `http://` tanpa enkripsi pada tautan finansial.
-- **4 Sampel Uji Cepat 1-Klik**: Uji instan modus *Kurir `.APK`*, *Phishing Bank*, *Task Scam*, atau *Pesan Resmi Aman*.
-- **Riwayat Pemindaian Sesi (`#scan-history-list`)**: Menyimpan hingga 8 hasil analisis terakhir di dalam sesi aktif untuk perbandingan cepat.
-
-### Modul 2 — Scam Simulator (`#simulator`)
-- **3 Skenario Bercabang (*Multi-Step Branching State Machine*)**:
-  1. **Modus Kurir Paket `.APK`**: Menghadapi kurir palsu yang mengirim file `Lihat_Foto_Paket.pdf.apk`.
-  2. **Modus Phishing Bank**: Menghadapi ancaman perubahan tarif transfer Rp150.000/bulan via link tiruan.
-  3. **Modus Lowongan Kerja VIP**: Menghadapi jebakan komisi paruh waktu Telegram yang meminta deposit modal.
-- **Evaluasi Keputusan & Jejak Langkah**: Setiap respons pengguna (*Aman* vs *Berisiko*) langsung menampilkan umpan balik konsekuensi di dalam *chat*, memperbarui telemetri sesi, dan dapat diulang kapan saja.
-
-### Modul 3 — Scam Detective (`#detective`)
-- **3 Kasus Forensik Digital**:
-  1. *Kasus #01*: Klaim Hadiah Undian Berhadiah (Pajak Pemenang Palsu).
-  2. *Kasus #02*: Panggilan Interview HRD Palsu (Penipuan Biaya Reservasi Tiket).
-  3. *Kasus #03*: Konfirmasi Tagihan Bea Cukai Palsu (Ancaman Penyitaan Barang Impor).
-- **Mekanisme Pengecoh (*Safe Decoy / False Positive Penalty*)**: Tidak semua teks yang dapat diklik adalah indikasi scam. Jika pengguna menuduh elemen normal sebagai penipuan, skor kasus dikenakan penalti `-15 poin` dan sistem menjelaskan mengapa elemen tersebut bukan bukti scam.
-- **Validasi Input (`FR-14`)**: Mencegah pengiriman laporan kosong dengan pesan peringatan kontekstual.
-
-### Modul 4 — Action Guide & Toolkit Darurat (`#guide`)
-- **Checklist Respons Insiden Interaktif**: 16 langkah penyelamatan terstruktur untuk 4 skenario darurat (*Terlanjur Klik Link Phishing*, *Terlanjur Bagikan OTP/PIN*, *Terlanjur Transfer Uang*, *Terlanjur Install `.APK`*) dengan *progress bar* persentase (`0%–100%`) yang tersimpan di `sessionStorage`.
-- **Generator Laporan Kronologi Resmi & Peringatan Keluarga (`#emergency-tools`)**: Menyusun draf laporan kronologi terstruktur yang siap disalin ke Call Center Bank / OJK 157 / Kepolisian (`patrolisiber.id` & `cekrekening.id`) serta pesan peringatan berformat tebal untuk grup WhatsApp keluarga.
-- **Direktori Call Center Resmi Terverifikasi (`#directory-list`)**: Pencarian *real-time* nomor darurat bank nasional, e-wallet, dan otoritas siber (dilengkapi tombol panggilan langsung `tel:`).
-
-### Modul 5 — Guardian Profile (`#profile-view`)
-- **Skor Kesiapsiagaan Sesi (`0–100`)**: Mengagregasi performa pengguna dari skenario *Scam Simulator* dan kasus *Scam Detective* ke dalam tiga tingkat kesiapsiagaan (*Digital Guardian Tangguh*, *Kewaspadaan Cukup Baik*, *Rentan Terhadap Rekayasa Sosial*).
-- **Analisis Kekuatan & Rekomendasi Spesifik**: Menampilkan kategori kemampuan terkuat dan indikator yang masih terlewat oleh pengguna, dilengkapi fitur **Salin Ringkasan Evaluasi** dan **Reset Penuh Sesi**.
-
----
-
-## 4. Sistem Desain UI/UX (Minimalist "Software" Design System)
-
-Antarmuka dirancang mengikuti filosofi **Minimalist "Software" Design System** (*Precision Architectural Minimalism*) yang mengutamakan keterbacaan tinggi, hierarki tipografi yang tegas, dan bebas distraksi visual:
-
-- **Palet Warna Semantik (WCAG 2.1 AA Compliant)**:
-  - `--dp-color-ground` (`#fcfcfd`): Latar kanvas utama yang bersih dan nyaman di mata.
-  - `--dp-color-ground-muted` (`#f3f4f6`): Latar sekunder untuk pemisah permukaan kerja.
-  - `--dp-color-panel` (`#ffffff`): Kartu permukaan kerja dengan *hairline border* `1px solid rgba(22, 25, 31, 0.08)`.
-  - `--dp-color-ink` (`#16191f`): Warna teks utama (*Cool Alabaster Charcoal*, kontras `17.4:1`).
-  - `--dp-color-accent` (`#074ce0`): *Trust Cobalt Blue* untuk aksi interaktif utama dan indikator fokus.
-  - Indikator Semantik: Hijau Aman (`#127848`), Kuning Waspada (`#b45309`), Merah Bahaya (`#be123c`).
-- **Tipografi**: Kombinasi **Host Grotesk** untuk judul struktural/skor numerik dan **Instrument Sans** untuk teks bacaan panjang dan antarmuka aplikasi.
-- **Responsivitas & Aksesibilitas**:
-  - Tata letak *CSS Grid 12-kolom* yang beradaptasi mulus di layar Desktop (`>1024px`), Tablet (`768px–1024px`), dan Mobile (`<768px`).
-  - Atribut ARIA lengkap (`role="tablist"`, `role="tabpanel"`, `aria-selected`, `aria-pressed`, `aria-live="polite"`) dan dukungan penuh navigasi keyboard (`Tab`, `Enter`, `Space`, `Alt+1..5`).
-
----
-
-## 5. Arsitektur Kode, Struktur Proyek & Pemeliharaan
-
-Proyek ini disusun dengan pemisahan tanggung jawab (*Separation of Concerns*) yang ketat antara **Data Skenario**, **Mesin Logika Deterministik (*Pure Engines*)**, **Manajemen State Sesi**, dan **Antarmuka Pengguna (DOM/UI)** sehingga mudah dipahami, diuji, dan dikembangkan lebih lanjut:
+Proyek ini memisahkan lapisan antarmuka pengguna (**`frontend/`**) dan lapisan layanan REST API *stateless* (**`Backend/`**) secara bersih:
 
 ```text
 D:\LOMBA\WEB\
-├── README.md                          # Dokumentasi utama proyek & panduan penggunaan
-├── SYSTEM_DESIGN.md                   # Dokumen System Design Software Engineering (14 Bagian)
-├── minimize.MD                        # Salinan spesifikasi desain sistem & arsitektur
-├── prompt.MD                          # Dokumen studi kasus & spesifikasi desain awal
-├── frontend/                          # Direktori utama Aplikasi Web (Production-Ready)
-│   ├── index.html                     # Shell Aplikasi Web (SPA Workspace, 5 View Panels)
-│   ├── style.css                      # Design Tokens & Layout Minimalist "Software" UI
-│   ├── app.js                         # Runtime utama terintegrasi (Zero-Dependency, siap file:// & HTTP)
-│   └── src/                           # Modul ES6 terpisah untuk pemeliharaan & ekstensi
+├── DESIGN.md                       # Spesifikasi Design Read, Three Dials, & Audit WCAG AA
+├── SYSTEM_DESIGN.md                # Dokumentasi Rekayasa Perangkat Lunak (SRS, Use Case, NFR, Rubric)
+├── README.md                       # Panduan Arsitektur, Fitur, & Cara Menjalankan
+├── logo_TUNTUN.jpeg                # Aset identitas visual resmi TUNTUN
+├── .agents/skills/                 # 10 Skill Anti-Slop, UI, Humanizer, & Design-Taste terinstal
+│   ├── antislop/
+│   ├── antislop-code/
+│   ├── antislop-copywriting/
+│   ├── antislop-human/
+│   ├── antislop-layoutmobile/
+│   ├── antislop-ui/
+│   ├── design-taste-frontend/
+│   ├── humanizer/
+│   ├── no-ai-slop/
+│   └── stop-slop/
+├── Backend/                        # Stateless Node.js REST API Server (Port 4000)
+│   ├── package.json
+│   ├── README.md
+│   └── src/
+│       ├── server.js               # HTTP REST Server (/api/health, /api/scan/*, /api/ai/*, /api/report/*)
+│       ├── controllers/
+│       │   ├── scanController.js   # Controller Heuristik R-01..R-10 & Magic-Bytes Biner
+│       │   └── aiChatController.js # Controller Chatbot AI Gratis & Analisis Kontekstual
+│       └── services/
+│           └── engineBridge.js     # Jembatan modul mesin deterministik
+├── frontend/                       # React 18 + Vite Single-Page Web Application (Port 5173)
+│   ├── package.json
+│   ├── vite.config.js              # Proxy /api -> http://localhost:4000
+│   ├── index.html                  # App Shell & Pre-rendered DOM Contract
+│   ├── style.css                   # Sistem Desain # Software + Widget + 3D Motion Graphics
+│   ├── public/
+│   │   └── logo_TUNTUN.jpeg        # Logo resmi TUNTUN
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx                 # Shell Navigasi, Pintasan Keyboard (Alt+1..5), & Precision Cursor
+│       ├── context/
+│       │   └── GuardianContext.jsx # State Sesi Terpusat (sessionStorage NFR-12)
+│       ├── data/
+│       │   ├── officialDomains.js
+│       │   ├── simulatorScenarios.js
+│       │   ├── detectiveCases.js
+│       │   └── emergencyDirectory.js
 │       ├── engines/
-│       │   ├── heuristicEngine.js     # Mesin deterministik pemindai pesan/URL/APK (Aturan R-01..R-07)
-│       │   └── scoringEngine.js       # Mesin kalkulasi skor Detective & Guardian Profile (FR-10..FR-13)
-│       └── state/
-│           └── sessionStore.js        # Pengelola state sesi pada window.sessionStorage (NFR-12)
+│       │   ├── heuristicEngine.js      # Mesin Deterministik R-01..R-10 + De-obfuskasi SMS
+│       │   ├── fileSignatureEngine.js  # Inspektur Header Biner Magic-Bytes (50 4B 03 04 vs %PDF)
+│       │   ├── hybridAiEngine.js       # Integrasi API AI Gratis (openai-fast) + Smart Synthesizer
+│       │   ├── scoringEngine.js        # Kalkulator Skor Kesiapsiagaan Sesi (0-100)
+│       │   └── reportBuilderEngine.js  # Generator Kronologi Laporan Resmi Bank/OJK/Polri
+│       └── components/
+│           ├── Navbar.jsx                  # Navigasi Ringkas + Indikator Progres Sesi
+│           ├── ScannerWorkspace.jsx        # Modul 1: Pemindai Pesan, URL, & Berkas Biner
+│           ├── PhoneMotionGraphic.jsx      # Visualisasi 3D Smartphone Forensic X-Ray
+│           ├── SimulatorWorkspace.jsx      # Modul 2: Simulasi Bercabang & Chatbot AI Gratis
+│           ├── DetectiveWorkspace.jsx      # Modul 3: Laboratorium Bukti & Pengecoh (FR-09)
+│           ├── GuideToolkitWorkspace.jsx   # Modul 4: Widget Protokol Darurat & Generator Laporan
+│           ├── GuardianProfileWorkspace.jsx# Modul 5: Evaluasi Sesi & Unduh Laporan (.txt)
+│           └── GuardianLanyard.jsx         # Kartu ID Lanyard 3D Interaktif + Unduh Kartu (.PNG)
 └── tests/
-    └── verify_suite.py                # Skrip pengujian otomatis (TC-01 s/d TC-08)
+    ├── test_engines.mjs            # 7 Suite Pengujian Mesin Runtime (Node.js)
+    └── verify_suite.py             # 8 Suite Pengujian Kepatuhan QA & DOM (Python)
 ```
-
-### Keunggulan Arsitektur Kode:
-1. **100% Deterministik & Tanpa Ketergantungan API Eksternal**: Seluruh evaluasi risiko pesan, percabangan simulasi, dan perhitungan skor menggunakan aturan deterministik terukur (bukan tebakan acak), menjamin kecepatan respons `<50ms` (`NFR-01`, `NFR-09`).
-2. **Kompatibilitas Ganda (*Dual-Mode Execution*)**:
-   - `frontend/index.html` + `frontend/app.js` dapat langsung dibuka melalui protokol `file://` (klik ganda langsung dari File Explorer) tanpa terkendala blokir CORS browser.
-   - Direktori `frontend/src/` menyediakan dekomposisi modul ES6 murni (`heuristicEngine.js`, `scoringEngine.js`, `sessionStore.js`) dengan dokumentasi JSDoc lengkap untuk kemudahan pengujian unit dan integrasi *bundler* (Vite/React).
-3. **Keamanan & Sanitasi Input (`escapeHtml`)**: Seluruh input teks dari pengguna pada fitur Pemindai maupun Generator Laporan disanitasi secara ketat untuk mencegah *Cross-Site Scripting (XSS)*.
 
 ---
 
-## 6. Panduan Instalasi, Menjalankan Aplikasi & Pengujian Otomatis
+## 2. Lima Modul Inti & Inovasi Unggulan
 
-Aplikasi ini dirancang tanpa memerlukan konfigurasi *database* eksternal maupun *API key* berbayar (*Zero-Config Deployment*).
+1. **Pemindai Pesan, URL & Biner Berkas (`ScannerWorkspace.jsx`)**:
+   - **10 Aturan Deterministik (`R-01` s.d. `R-10`) + De-obfuskasi**: Mendeteksi berkas `.APK` samaran (`R-01`), *lookalike domain* perbankan (`R-02`), pancingan OTP/PIN (`R-03`), tautan pendek pengalih (`R-04`), tekanan waktu (`R-05`), iming-iming hadiah/VIP (`R-06`), nomor pribadi (`R-07`), promosi judi/penarikan dana tersamar seperti `'With-draw'` (`R-08`), serta membedakan SMS promosi resmi operator seperti `myads.id` & `Kirim STOP ke 8000` (`R-09` & `R-10`).
+   - **Inspektur *Magic-Bytes* Biner Lokal**: Memeriksa 8 byte pertama berkas menggunakan `FileReader` + `Uint8Array` di memori browser (`50 4B 03 04` ZIP/APK vs `25 50 44 46` PDF asli) tanpa mengunggah berkas ke server (**NFR-07**).
+   - **3D Smartphone Forensic X-Ray (`PhoneMotionGraphic.jsx`) & 3-Lane Pulsing Pipeline**: Memvisualisasikan anatomi ancaman di dalam layar ponsel secara interaktif.
+2. **Simulasi Keputusan & Chatbot AI Gratis (`SimulatorWorkspace.jsx`)**:
+   - **3 Skenario Bercabang**: Kurir Paket `.APK`, Phishing Tarif Bank, dan Kerja Paruh Waktu VIP.
+   - **Chatbot Latihan Pertahanan (API AI Gratis `openai-fast` + Guardrail Deterministik)**: Menggunakan endpoint gratis `https://text.pollinations.ai/openai` dan *Smart Contextual Synthesizer* (`buildSmartContextualScammerReply`) dengan penilaian keamanan 100% deterministik (**NFR-09**).
+3. **Detektif Bukti (`DetectiveWorkspace.jsx`)**:
+   - 3 kasus investigasi bukti pesan dengan elemen berbahaya (*True Positives*) dan elemen normal pengecoh (*False Positives*) sesuai **FR-09**.
+4. **Widget Protokol Darurat & Generator Laporan (`GuideToolkitWorkspace.jsx`)**:
+   - Menyajikan 4 tab kondisi darurat dalam bentuk **Grid Kartu Widget Informasi (`LANGKAH 01..04`)** tanpa *checkbox* yang melelahkan, dilengkapi **Generator Kronologi Laporan Resmi** siap salin dan **Direktori Call Center Resmi Terverifikasi** (`BCA 1500888`, `BRI 14017`, `Mandiri 14000`, `BNI 1500046`, `OJK 157`, `CekRekening.id`).
+5. **Profil & Kartu ID Lanyard 3D Interaktif (`GuardianProfileWorkspace.jsx` & `GuardianLanyard.jsx`)**:
+   - Menghitung indeks kesiapsiagaan sesi (`0–100`) dan menampilkan **Kartu ID Lanyard 3D** dengan fisika tali *multi-node*, efek kilau *hologram foil*, input nama/callsign langsung, pemilih divisi, 3 tema warna kartu (`Obsidian`, `Cobalt`, `Emerald`), dan tombol **Unduh Kartu (`.PNG`)**.
 
-### Cara 1 — Menjalankan via Local Web Server (Direkomendasikan)
-Buka terminal/PowerShell pada direktori utama proyek (`D:\LOMBA\WEB`), lalu jalankan:
+---
 
+## 3. Cara Menjalankan & Memverifikasi
+
+### A. Menjalankan Frontend (Port 5173)
 ```powershell
-py -3 -m http.server 8080 --directory frontend
+cd D:\LOMBA\WEB\frontend
+npm install
+npm run dev
 ```
-Kemudian buka peramban (Chrome / Edge / Firefox) dan akses:
-👉 **`http://localhost:8080`**
+Buka **`http://localhost:5173/`** di browser.
 
-### Cara 2 — Membuka Langsung Tanpa Server (*Zero-Setup*)
-Buka langsung berkas [`frontend/index.html`](./frontend/index.html) menggunakan peramban web modern apa pun. Seluruh 5 modul aplikasi, penyimpanan sesi `sessionStorage`, dan fitur salin laporan berjalan penuh.
-
-### Menjalankan Pengujian Otomatis (*Automated QA Suite*)
-Untuk memverifikasi integritas kode, kesesuaian *DOM ID*, ketersediaan *Design System Token*, serta cakupan skenario (`TC-01` s/d `TC-08`), jalankan perintah berikut dari direktori utama:
-
+### B. Menjalankan Backend API (Port 4000, Opsional)
 ```powershell
-py -3 tests/verify_suite.py
+cd D:\LOMBA\WEB\Backend
+npm start
 ```
 
-Contoh keluaran pengujian:
-```text
-========================================================================
-DIGITAL GUARDIAN — AUTOMATED QUALITY ASSURANCE REPORT
-========================================================================
-[PASS] TC-01: Zero broken DOM ID references between index.html and app.js
-[PASS] TC-02: All 5 SPA Workspace views and top-bar navigation tabs registered
-[PASS] TC-03: Minimalist 'Software' Design System color tokens present in style.css
-[PASS] TC-04: Heuristic Scanner Rules (R-01..R-07)
-[PASS] TC-05: Branching Scam Simulator Scenarios (courier, bank, job)
-[PASS] TC-06: Scam Detective Multi-Case & False-Positive Decoys
-[PASS] TC-07: Input validation alerts (FR-14) and sessionStorage persistence (NFR-12)
-[PASS] TC-08: Technical documentation (README.md & SYSTEM_DESIGN.md) complete
-------------------------------------------------------------------------
-Result: 8/8 checks passed.
-========================================================================
+### C. Menjalankan Suite Pengujian Otomatis
+```powershell
+cd D:\LOMBA\WEB\frontend
+npm run build
+node D:\LOMBA\WEB\tests\test_engines.mjs
+py -3 D:\LOMBA\WEB\tests\verify_suite.py
 ```
-
----
-
-## 7. Matriks Ketertelusuran Kebutuhan (Requirement Traceability Matrix)
-
-Berikut adalah pemetaan langsung antara kebutuhan fungsional/non-fungsional pada dokumen studi kasus dengan implementasi kode pada repositori ini:
-
-| Kode Kebutuhan | Deskripsi Kebutuhan Studi Kasus | Modul & Lokasi Implementasi | Status |
-| :--- | :--- | :--- | :---: |
-| **FR-01** | Menampilkan halaman utama dengan akses jelas ke fitur pembelajaran & utilitas | Top Application Bar (`.app-topbar`) di [`frontend/index.html`](./frontend/index.html) | ✅ Selesai |
-| **FR-02** | Menyediakan daftar skenario penipuan pada fitur *Scam Simulator* | 3 Tab Skenario (`courier`, `bank`, `job`) di [`frontend/index.html`](./frontend/index.html) | ✅ Selesai |
-| **FR-03** | Menampilkan tahapan situasi penipuan dan pilihan tindakan pengguna | `renderSimulatorNode()` di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-04** | Memproses setiap pilihan tindakan dan menentukan alur berikutnya | *Branching State Machine* `simulatorScenarios` di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-05** | Menampilkan hasil akhir simulasi berdasarkan rangkaian keputusan | `#sim-verdict-banner` & evaluasi akhir di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-06** | Menampilkan umpan balik edukatif untuk setiap keputusan di *Scam Simulator* | `choice.feedback` di dalam balon percakapan [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-07** | Menampilkan studi kasus pesan/konten mencurigakan pada *Scam Detective* | 3 Kasus Forensik (`prize`, `hrd`, `customs`) di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-08** | Memungkinkan pengguna menandai bagian pesan yang dicurigai sebagai scam | `toggleClueSelection()` & `.evidence-clue-btn` di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-09** | Mengevaluasi ketepatan indikator yang dipilih pengguna | `evaluateDetectiveSubmission()` di [`frontend/src/engines/scoringEngine.js`](./frontend/src/engines/scoringEngine.js) | ✅ Selesai |
-| **FR-10** | Menampilkan penjelasan terhadap indikator yang benar, terlewat, maupun pengecoh | `renderCaseFeedbackList()` di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-11** | Menghitung skor kesiapsiagaan berdasarkan hasil interaksi pengguna | `computeGuardianPreparedness()` & `updateUnifiedGuardianProfileUI()` | ✅ Selesai |
-| **FR-12** | Menampilkan ringkasan tingkat kerentanan pengguna pada *Guardian Profile* | View `#profile-view` di [`frontend/index.html`](./frontend/index.html) | ✅ Selesai |
-| **FR-13** | Memberikan rekomendasi pembelajaran berdasarkan hasil evaluasi | `#profile-strength` & `#profile-weakness` di [`frontend/app.js`](./frontend/app.js) | ✅ Selesai |
-| **FR-14** | Validasi input sebelum memproses keputusan atau pengiriman jawaban | `#detective-validation-msg` & `#scanner-validation-msg` | ✅ Selesai |
-| **NFR-01..12** | Performa `<50ms`, responsif, tanpa login/PII, data fiktif aman, `sessionStorage` | `window.sessionStorage` (`dg_learning_session_v2`) & CSS Grid Responsif | ✅ Selesai |
-
----
-
-## 📚 Dokumentasi Teknis Lanjutan
-Untuk rincian **Diagram Use Case (PlantUML)**, **4 Activity Diagram (Mermaid)**, **Arsitektur C4 Model**, **12-Entitas ERD**, **Spesifikasi Kontrak REST API**, **Sequence Diagram**, dan **Pemodelan Ancaman STRIDE**, silakan baca dokumen spesifikasi teknis lengkap di:
-👉 **[`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md)**

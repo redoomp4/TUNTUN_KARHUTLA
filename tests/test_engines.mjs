@@ -32,6 +32,18 @@ const safeRes = evaluateMessageHeuristics(SCANNER_PRESETS.safe.text);
 assert(safeRes.score < 25 && safeRes.verdictLevel === 'SAFE', 'Safe OTP warning preset must be graded SAFE');
 console.log(`[PASS] Engine 1C: Safe Official Reminder Detection -> Score ${safeRes.score}/100 (${safeRes.verdictBadgeText})`);
 
+const judolSms = "Situs pasti 'With-draw' dari tahun 2007\nPenarikan 'With-draw' milyarann cuma hitungan MENIT\nklik = https://wde.la/NOSVIP134\nAPK = https://wde.la/APK-1";
+const judolRes = evaluateMessageHeuristics(judolSms);
+assert(judolRes.score >= 85 && judolRes.verdictLevel === 'DANGER', 'Obfuscated With-draw + APK link SMS must trigger DANGER');
+assert(judolRes.findings.some(f => f.id === 'R-01') && judolRes.findings.some(f => f.id === 'R-08'), 'Must detect both R-01 APK link and R-08 gambling blast');
+console.log(`[PASS] Engine 1D: Real-World Obfuscated Gambling/APK SMS -> Score ${judolRes.score}/100 (${judolRes.verdictBadgeText}), Findings=${judolRes.findings.map(f => f.id).join(',')}`);
+
+const promoSms = "Dapatkan diskon s.d 50% spesial buat kamu! Apply kartu kredit Bank Mega, nikmati berbagai keuntungan buat makan, belanja & liburan. Cek sekarang myads.id/Y8dGE\n\nPenawaran/info ini bermanfaat? Jika tidak, Kirim STOP Bank Mega ke 8000";
+const promoRes = evaluateMessageHeuristics(promoSms);
+assert(promoRes.isTelcoPromoBroadcast === true && promoRes.verdictBadgeText === 'Iklan promosi operator', 'Telco MyAds + STOP 8000 SMS must be accurately identified as Telco Promo Broadcast');
+assert(promoRes.findings.some(f => f.id === 'R-09') && promoRes.findings.some(f => f.id === 'R-10'), 'Must detect R-09 myads.id and R-10 STOP 8000 opt-out');
+console.log(`[PASS] Engine 1E: Real-World Telco Promo SMS (myads.id + 8000) -> Score ${promoRes.score}/100 (${promoRes.verdictBadgeText}), Findings=${promoRes.findings.map(f => f.id).join(',')}`);
+
 // 2. Test Client-Side Binary Magic-Bytes File Inspector
 const fakePdfSample = SIMULATED_BINARY_SAMPLES.renamedApkAsPdf;
 const fakePdfRes = analyzeFileBinarySignature(fakePdfSample.fileName, fakePdfSample.fileSize, fakePdfSample.bytes);

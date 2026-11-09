@@ -3,19 +3,31 @@ import { useGuardian } from '../context/GuardianContext.jsx';
 import { ACTION_GUIDE_SITUATIONS, EMERGENCY_DIRECTORY_DATA } from '../data/emergencyDirectory.js';
 import { buildOfficialReportDraft, buildFamilyWarningDraft } from '../engines/reportBuilderEngine.js';
 
+const SITUATION_STRIP_LABELS = {
+  'guide-sit-1': '01. Pesan / File Mencurigakan',
+  'guide-sit-2': '02. Terlanjur Klik / Instal .APK',
+  'guide-sit-3': '03. Bocor Kode OTP / PIN',
+  'guide-sit-4': '04. Sudah Transfer Dana'
+};
+
+const STEP_PRIORITY_TAGS = [
+  'Prioritas 1 • Instan',
+  'Prioritas 2 • Verifikasi',
+  'Prioritas 3 • Proteksi',
+  'Prioritas 4 • Mitigasi'
+];
+
 export default function GuideToolkitWorkspace({ hidden }) {
   const {
-    sessionState,
     activeGuideId,
     incidentForwardedBanner,
     setIncidentForwardedBanner,
     reportForm,
     setReportForm,
-    toggleChecklistStep,
-    resetChecklist
+    navigateToView
   } = useGuardian();
 
-  const [openGuides, setOpenGuides] = useState({ 'guide-sit-1': true });
+  const [selectedSitId, setSelectedSitId] = useState('guide-sit-1');
   const [reportOutput, setReportOutput] = useState(() => buildOfficialReportDraft(reportForm));
   const [copyOfficialFeedback, setCopyOfficialFeedback] = useState(false);
   const [copyFamilyFeedback, setCopyFamilyFeedback] = useState(false);
@@ -23,7 +35,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
 
   useEffect(() => {
     if (activeGuideId) {
-      setOpenGuides(prev => ({ ...prev, [activeGuideId]: true }));
+      setSelectedSitId(activeGuideId);
     }
   }, [activeGuideId]);
 
@@ -31,9 +43,9 @@ export default function GuideToolkitWorkspace({ hidden }) {
     setReportOutput(buildOfficialReportDraft(reportForm));
   }, [reportForm]);
 
-  const totalSteps = ACTION_GUIDE_SITUATIONS.reduce((acc, sit) => acc + sit.steps.length, 0);
-  const checkedCount = Object.values(sessionState.checklist || {}).filter(Boolean).length;
-  const pct = totalSteps > 0 ? Math.round((checkedCount / totalSteps) * 100) : 0;
+  const activeSituation =
+    ACTION_GUIDE_SITUATIONS.find(s => s.id === selectedSitId) || ACTION_GUIDE_SITUATIONS[0];
+  const sitIndex = ACTION_GUIDE_SITUATIONS.findIndex(s => s.id === activeSituation.id);
 
   const handleCopyOfficial = () => {
     const draft = buildOfficialReportDraft(reportForm);
@@ -72,127 +84,127 @@ export default function GuideToolkitWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
+        {/* Top Creative Hotline & Lanyard Strip */}
+        <div className="creative-strip-bar">
+          <div className="strip-item">
+            <span className="strip-dot dot-red" />
+            <span>Darurat 24 Jam: <strong>BCA 1500888</strong> • <strong>BRI 14017</strong> • <strong>Mandiri 14000</strong> • <strong>OJK 157</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Protokol Aktif: <strong>{SITUATION_STRIP_LABELS[activeSituation.id]}</strong></span>
+          </div>
+          <button
+            type="button"
+            className="strip-lanyard-pill light-pill"
+            onClick={() => navigateToView('profile')}
+          >
+            Buka Lanyard ID
+          </button>
+        </div>
+
         {incidentForwardedBanner && (
-          <div className="finding-card finding-safe" style={{ marginBottom: '24px' }}>
+          <div className="finding-card finding-safe" style={{ marginBottom: '20px' }}>
             <div className="scan-history-header">
-              <strong>Data insiden berhasil diteruskan dari Pemindai Pesan & Berkas</strong>
+              <strong>Data insiden diteruskan otomatis dari Pemindai</strong>
               <button
                 type="button"
                 className="btn-link-sm"
                 onClick={() => setIncidentForwardedBanner(null)}
               >
-                Tutup info
+                Tutup
               </button>
             </div>
             <p>
-              Prosedur penyelamatan yang sesuai telah dibuka di bawah, dan formulir{' '}
-              <strong>Penyusun Kronologi Laporan Resmi</strong> telah diisi otomatis untuk modus{' '}
-              <em>{incidentForwardedBanner.type}</em> ({incidentForwardedBanner.entity}).
+              Widget protokol penyelamatan dan draf laporan resmi di bawah telah disesuaikan untuk{' '}
+              <strong>{incidentForwardedBanner.type}</strong>.
             </p>
-            <div className="scanner-actions" style={{ marginTop: '8px' }}>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  const el = document.getElementById('emergency-tools');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-              >
-                Lihat draf laporan resmi siap salin
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Part A: Heading beside Native Disclosures (# Software Pattern) */}
-        <div className="guide-split-layout">
-          <div className="guide-intro-col">
-            <h2 id="guide-heading" className="section-title">Action Guide</h2>
+        {/* Section Header + Situation Strip Tabs */}
+        <div className="section-intro-row" style={{ marginBottom: '20px' }}>
+          <div className="section-intro-copy">
+            <h2 id="guide-heading" className="section-title">Widget Protokol Darurat</h2>
             <p className="section-description">
-              Langkah penyelamatan darurat berdasarkan situasi yang Anda alami. Centang setiap tindakan yang sudah dilakukan untuk memantau progres pengamanan akun.
+              Pilih kondisi yang dialami untuk melihat 4 kartu informasi penyelamatan instan.
             </p>
+          </div>
 
-            <div className="checklist-progress-card">
-              <div className="checklist-progress-info">
-                <span className="progress-title" id="checklist-progress-text">
-                  {checkedCount} dari {totalSteps} langkah selesai
-                </span>
-                <strong className="progress-pct" id="checklist-progress-pct">{pct}%</strong>
+          <div className="case-selector-bar" role="tablist" aria-label="Pilih Kondisi Insiden">
+            {ACTION_GUIDE_SITUATIONS.map((sit) => {
+              const isSelected = sit.id === activeSituation.id;
+              return (
+                <button
+                  key={sit.id}
+                  id={sit.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={`case-tab-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedSitId(sit.id)}
+                >
+                  {SITUATION_STRIP_LABELS[sit.id] || sit.title}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Visual Information Widget Dashboard (Replaces Checkboxes) */}
+        <div className="protocol-widget-board">
+          <div className="protocol-summary-banner">
+            <div className="protocol-summary-left">
+              <span className="protocol-stage-badge" id="checklist-progress-text">
+                Protokol 0{sitIndex + 1} / 04
+              </span>
+              <div>
+                <h3 className="protocol-banner-title">{activeSituation.title}</h3>
+                <p className="protocol-banner-lead">{activeSituation.lead}</p>
               </div>
-              <div
-                className="checklist-bar-track"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow={pct}
-              >
-                <div
-                  className="checklist-bar-fill"
-                  id="checklist-bar-fill"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+            </div>
+            <div className="protocol-summary-right">
+              <span className="protocol-stat-pill" id="checklist-progress-pct">4 Langkah Inti</span>
               <button
                 type="button"
                 id="checklist-reset-btn"
-                className="btn-link-sm"
-                onClick={resetChecklist}
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  const nextIdx = (sitIndex + 1) % ACTION_GUIDE_SITUATIONS.length;
+                  setSelectedSitId(ACTION_GUIDE_SITUATIONS[nextIdx].id);
+                }}
               >
-                Atur ulang daftar periksa
+                Protokol Berikutnya
               </button>
             </div>
+            <div id="checklist-bar-fill" hidden />
           </div>
 
-          <div className="disclosure-stack">
-            {ACTION_GUIDE_SITUATIONS.map((sit) => (
-              <details
-                key={sit.id}
-                className="disclosure-item"
-                id={sit.id}
-                open={Boolean(openGuides[sit.id])}
-              >
-                <summary
-                  className="disclosure-summary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setOpenGuides(prev => ({ ...prev, [sit.id]: !prev[sit.id] }));
-                  }}
-                >
-                  <span className="summary-label">{sit.title}</span>
-                  <span className="summary-plus" aria-hidden="true">+</span>
-                </summary>
-                <div className="disclosure-body">
-                  <p className="guide-lead">{sit.lead}</p>
-                  <div className="interactive-steps-list">
-                    {sit.steps.map((step) => (
-                      <label key={step.id} className="check-step-row">
-                        <input
-                          type="checkbox"
-                          className="guide-step-check"
-                          data-step-id={step.id}
-                          checked={Boolean(sessionState.checklist?.[step.id])}
-                          onChange={(e) => toggleChecklistStep(step.id, e.target.checked)}
-                        />
-                        <span>
-                          <strong>{step.bold}</strong> {step.text}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+          {/* 4-Card Bento Grid of Information Widgets (Zero Checkboxes) */}
+          <div className="info-widget-grid">
+            {activeSituation.steps.map((step, idx) => (
+              <article key={step.id} className="info-widget-card">
+                <div className="info-widget-top">
+                  <span className="info-step-num">LANGKAH 0{idx + 1}</span>
+                  <span className="info-step-tag">{STEP_PRIORITY_TAGS[idx] || 'Protokol'}</span>
                 </div>
-              </details>
+                <h4 className="info-widget-title">{step.bold.replace(':', '')}</h4>
+                <p className="info-widget-desc">{step.text}</p>
+              </article>
             ))}
           </div>
         </div>
 
-        {/* Part B: Practical Emergency Toolkit (Report Generator & Verified Directory) */}
-        <div id="emergency-tools" className="toolkit-section">
+        {/* Part B: Practical Emergency Toolkit (Report Generator & Verified Directory Widgets) */}
+        <div id="emergency-tools" className="toolkit-section" style={{ marginTop: '28px' }}>
           <div className="toolkit-grid">
-            {/* Left Card: Chronology Report Builder */}
+            {/* Left Widget: Chronology Report Builder */}
             <div className="toolkit-card">
-              <h3 className="panel-heading">Penyusun kronologi laporan resmi</h3>
+              <div className="widget-head-row">
+                <h3 className="panel-heading" style={{ marginBottom: 0 }}>Widget Generator Laporan Resmi</h3>
+                <span className="verdict-tag verdict-safe">Siap Salin</span>
+              </div>
               <p className="panel-subtext">
-                Isi data kejadian (atau teruskan otomatis dari modul Pemindai) untuk menghasilkan draf laporan siap salin bagi Call Center Bank, OJK 157, atau Kepolisian.
+                Susun kronologi singkat untuk Call Center Bank, OJK 157, atau Kepolisian.
               </p>
 
               <div className="report-form-grid">
@@ -229,38 +241,38 @@ export default function GuideToolkitWorkspace({ hidden }) {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="rep-entity" className="field-label">Nama instansi yang dicatut</label>
+                  <label htmlFor="rep-entity" className="field-label">Instansi dicatut</label>
                   <input
                     type="text"
                     id="rep-entity"
                     className="form-input"
                     value={reportForm.entity}
                     onChange={(e) => setReportForm(prev => ({ ...prev, entity: e.target.value }))}
-                    placeholder="Contoh: Bank BCA / J&T Express"
+                    placeholder="Contoh: Bank BCA / J&T"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="rep-suspect" className="field-label">Nomor telepon, rekening, atau URL pelaku</label>
+                  <label htmlFor="rep-suspect" className="field-label">Nomor / Rekening / URL pelaku</label>
                   <input
                     type="text"
                     id="rep-suspect"
                     className="form-input"
                     value={reportForm.suspect}
                     onChange={(e) => setReportForm(prev => ({ ...prev, suspect: e.target.value }))}
-                    placeholder="Contoh: 0821-xxxx / Rek 881029xxx"
+                    placeholder="Contoh: 0821-xxxx / Rek 8810xxx"
                   />
                 </div>
 
                 <div className="form-group form-group-full">
-                  <label htmlFor="rep-loss" className="field-label">Rincian kejadian atau kerugian</label>
+                  <label htmlFor="rep-loss" className="field-label">Ringkasan kejadian</label>
                   <input
                     type="text"
                     id="rep-loss"
                     className="form-input"
                     value={reportForm.loss}
                     onChange={(e) => setReportForm(prev => ({ ...prev, loss: e.target.value }))}
-                    placeholder="Contoh: Mengeklik tautan pada pukul 14.10 WIB, belum ada dana keluar"
+                    placeholder="Contoh: Mengeklik tautan pukul 14.10 WIB, belum ada dana keluar"
                   />
                 </div>
               </div>
@@ -272,7 +284,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="btn btn-secondary btn-sm"
                   onClick={() => setReportOutput(buildOfficialReportDraft(reportForm))}
                 >
-                  Perbarui draf
+                  Segarkan
                 </button>
                 <button
                   type="button"
@@ -280,7 +292,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="btn btn-primary btn-sm"
                   onClick={handleCopyOfficial}
                 >
-                  {copyOfficialFeedback ? 'Laporan resmi disalin' : 'Salin laporan resmi'}
+                  {copyOfficialFeedback ? 'Tersalin' : 'Salin Laporan Resmi'}
                 </button>
                 <button
                   type="button"
@@ -288,32 +300,35 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="btn btn-secondary btn-sm"
                   onClick={handleCopyFamily}
                 >
-                  {copyFamilyFeedback ? 'Peringatan keluarga disalin' : 'Salin peringatan keluarga'}
+                  {copyFamilyFeedback ? 'Tersalin' : 'Salin Info Keluarga'}
                 </button>
               </div>
 
               <div className="report-output-wrap">
-                <label htmlFor="rep-output-text" className="field-label">Hasil draf laporan</label>
+                <label htmlFor="rep-output-text" className="field-label">Pratinjau draf</label>
                 <textarea
                   id="rep-output-text"
                   className="report-output-textarea"
-                  rows="6"
+                  rows="5"
                   value={reportOutput}
                   readOnly
                 />
               </div>
             </div>
 
-            {/* Right Card: Verified Official Contact Directory */}
+            {/* Right Widget: Verified Official Contact Directory */}
             <div className="toolkit-card">
-              <h3 className="panel-heading">Direktori kontak darurat resmi</h3>
+              <div className="widget-head-row">
+                <h3 className="panel-heading" style={{ marginBottom: 0 }}>Widget Kontak Darurat Resmi</h3>
+                <span className="verdict-tag verdict-neutral">Terverifikasi</span>
+              </div>
               <p className="panel-subtext">
-                Gunakan hanya nomor di bawah ini untuk pemblokiran rekening dan pengaduan resmi.
+                Hubungi langsung nomor resmi berikut untuk pemblokiran cepat.
               </p>
 
               <div className="form-group">
                 <label htmlFor="dir-search-input" className="field-label">
-                  Cari bank, e-wallet, atau otoritas
+                  Filter instansi
                 </label>
                 <input
                   type="search"
@@ -321,14 +336,14 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="form-input"
                   value={dirSearch}
                   onChange={(e) => setDirSearch(e.target.value)}
-                  placeholder="Ketik nama instansi (misalnya BCA, BRI, DANA, OJK)..."
+                  placeholder="Ketik BCA, BRI, Mandiri, DANA, OJK..."
                 />
               </div>
 
               <div className="directory-list" id="directory-list" role="list">
                 {filteredDirectory.length === 0 ? (
                   <p className="empty-finding-state">
-                    Tidak ditemukan instansi dengan kata kunci "{dirSearch}".
+                    Tidak ditemukan "{dirSearch}".
                   </p>
                 ) : (
                   filteredDirectory.map((item, idx) => {

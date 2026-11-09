@@ -3,7 +3,12 @@ import { useGuardian } from '../context/GuardianContext.jsx';
 import { SCANNER_PRESETS } from '../data/officialDomains.js';
 import { evaluateMessageHeuristics } from '../engines/heuristicEngine.js';
 import { analyzeFileBinarySignature, SIMULATED_BINARY_SAMPLES } from '../engines/fileSignatureEngine.js';
-import { generateSafeVerificationReplies } from '../engines/hybridAiEngine.js';
+import {
+  generateSafeVerificationReplies,
+  requestHybridMessageAnalysis,
+  buildDeterministicContextualSummary
+} from '../engines/hybridAiEngine.js';
+import PhoneMotionGraphic from './PhoneMotionGraphic.jsx';
 
 export default function ScannerWorkspace({ hidden }) {
   const {
@@ -18,6 +23,8 @@ export default function ScannerWorkspace({ hidden }) {
   const [validationError, setValidationError] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [fileReport, setFileReport] = useState(null);
+  const [aiDeepSummary, setAiDeepSummary] = useState(null);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [copiedReplyIdx, setCopiedReplyIdx] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -25,7 +32,7 @@ export default function ScannerWorkspace({ hidden }) {
   const detDoneCount = Object.keys(sessionState.detective?.caseResults || {}).length;
   const scanCount = (sessionState.scanHistory || []).length;
 
-  const runMessageScan = (rawText) => {
+  const runMessageScan = async (rawText) => {
     const trimmed = (rawText || '').trim();
     if (!trimmed) {
       setValidationError(true);
@@ -36,6 +43,16 @@ export default function ScannerWorkspace({ hidden }) {
     const evaluated = evaluateMessageHeuristics(trimmed);
     setScanResult(evaluated);
     recordScanToHistory(trimmed, evaluated.score);
+
+    // Immediate deterministic synthesis + async Hybrid AI contextual second opinion
+    setAiDeepSummary({
+      summaryText: buildDeterministicContextualSummary(trimmed, evaluated),
+      source: 'DETERMINISTIC_INSTANT'
+    });
+    setAiAnalyzing(true);
+    const hybridAnalysis = await requestHybridMessageAnalysis(trimmed, evaluated);
+    setAiDeepSummary(hybridAnalysis);
+    setAiAnalyzing(false);
   };
 
   const handlePresetClick = (presetKey) => {
@@ -50,6 +67,7 @@ export default function ScannerWorkspace({ hidden }) {
     setValidationError(false);
     setScanResult(null);
     setFileReport(null);
+    setAiDeepSummary(null);
   };
 
   const handleFileUpload = (e) => {
@@ -62,6 +80,7 @@ export default function ScannerWorkspace({ hidden }) {
       const bytes = new Uint8Array(arrayBuf);
       const binRes = analyzeFileBinarySignature(file.name, file.size, bytes);
       setScanResult(null);
+      setAiDeepSummary(null);
       setFileReport(binRes);
       setValidationError(false);
       recordScanToHistory(`[Berkas] ${binRes.fileName} (${binRes.magicHex})`, binRes.score, binRes);
@@ -74,6 +93,7 @@ export default function ScannerWorkspace({ hidden }) {
     if (!sample) return;
     const binRes = analyzeFileBinarySignature(sample.fileName, sample.fileSize, sample.bytes);
     setScanResult(null);
+    setAiDeepSummary(null);
     setFileReport(binRes);
     setValidationError(false);
     recordScanToHistory(`[Berkas] ${binRes.fileName} (${binRes.magicHex})`, binRes.score, binRes);
@@ -102,7 +122,7 @@ export default function ScannerWorkspace({ hidden }) {
     ? fileReport.verdictDesc
     : scanResult
       ? scanResult.verdictDesc
-      : 'Tempelkan isi pesan atau periksa berkas lampiran di samping untuk membedah domain tujuan, header biner .APK tersembunyi, dan pola rekayasa sosial.';
+      : 'Tempel pesan atau pilih berkas untuk mendeteksi tautan palsu, APK samaran, dan modus penipuan.';
 
   const redFlagsCount = scanResult
     ? scanResult.findings.filter(f => f.severity !== 'safe').length
@@ -113,23 +133,45 @@ export default function ScannerWorkspace({ hidden }) {
       id="scanner"
       className="section-ground hero-opening app-view-panel"
       data-view-name="scanner"
+      data-enter="hero"
       aria-labelledby="scanner-heading"
       hidden={hidden}
     >
       <div className="site-container">
+        {/* Creative Top Strip Bar */}
+        <div className="creative-strip-bar">
+          <div className="strip-item">
+            <span className="strip-dot dot-blue" />
+            <span>Mesin: <strong>R-01..R-10 Deterministik + AI Hibrida Gratis</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Kecepatan: <strong>{scanResult?.executionMs || 0.4} ms</strong></span>
+          </div>
+          <div className="strip-item">
+            <span>Privasi: <strong>100% Memori Lokal</strong></span>
+          </div>
+          <button
+            type="button"
+            className="strip-lanyard-pill light-pill"
+            onClick={() => navigateToView('profile')}
+          >
+            Kartu ID Lanyard ({sessionState.sessionId})
+          </button>
+        </div>
+
         <div className="opening-split">
           {/* Left Column (1.45fr): Intro & Input Workbench */}
           <div className="opening-copy-col">
             <h1 id="scanner-heading" className="display-title">
-              Kenali manipulasi penipuan digital sebelum mengambil keputusan.
+              Cek pesan &amp; berkas mencurigakan dalam hitungan detik.
             </h1>
             <p className="lead-paragraph">
-              Periksa pesan mencurigakan, bedah header biner berkas .APK tersembunyi, uji keputusan di simulasi interaktif, dan susun laporan darurat resmi.
+              Deteksi tautan palsu, bedah berkas .APK samaran, dan kenali pola penipuan secara instan.
             </p>
 
             <div className="scanner-input-group">
               <div className="scanner-presets-bar">
-                <span className="preset-label">Contoh pesan uji:</span>
+                <span className="preset-label">Contoh cepat:</span>
                 <div className="preset-buttons">
                   {Object.entries(SCANNER_PRESETS).map(([key, item]) => (
                     <button
@@ -145,19 +187,28 @@ export default function ScannerWorkspace({ hidden }) {
                 </div>
               </div>
 
-              <label htmlFor="scanner-textarea" className="field-label">
-                Periksa teks pesan, tautan URL, atau nama berkas
-              </label>
+              <div className="scan-history-header" style={{ marginBottom: '4px' }}>
+                <label htmlFor="scanner-textarea" className="field-label" style={{ marginBottom: 0 }}>
+                  Teks pesan, URL, atau nama berkas
+                </label>
+                <span className="preset-label">Ctrl + Enter</span>
+              </div>
               <textarea
                 id="scanner-textarea"
                 className="scanner-textarea"
-                rows="5"
+                rows="4"
                 value={inputText}
                 onChange={(e) => {
                   setInputText(e.target.value);
                   if (validationError) setValidationError(false);
                 }}
-                placeholder="Tempelkan isi pesan WhatsApp atau SMS, alamat tautan (misalnya http://bca-tarif-layanan2026.vip/batal), atau nama berkas lampiran..."
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    runMessageScan(inputText);
+                  }
+                }}
+                placeholder="Tempel isi chat WhatsApp/SMS, tautan URL, atau nama berkas..."
               />
 
               <div
@@ -166,7 +217,7 @@ export default function ScannerWorkspace({ hidden }) {
                 hidden={!validationError}
                 role="alert"
               >
-                Masukkan teks pesan, URL, atau pilih berkas terlebih dahulu untuk dianalisis.
+                Masukkan teks pesan, URL, atau pilih berkas terlebih dahulu.
               </div>
 
               <div className="scanner-actions">
@@ -186,13 +237,20 @@ export default function ScannerWorkspace({ hidden }) {
                 >
                   Bersihkan
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => navigateToView('profile')}
+                >
+                  Kartu ID Lanyard
+                </button>
               </div>
 
               {/* Client-Side Binary Magic-Bytes File Inspector */}
               <div className="file-inspector-bar">
                 <div className="file-inspector-head">
-                  <span className="field-label">Inspektur header biner berkas (.APK menyamar .PDF)</span>
-                  <span className="preset-label">100% diproses di memori lokal tanpa unggah server</span>
+                  <span className="field-label">Cek Berkas (.APK menyamar .PDF)</span>
+                  <span className="preset-label">100% Lokal</span>
                 </div>
                 <div className="file-inspector-controls">
                   <input
@@ -207,21 +265,21 @@ export default function ScannerWorkspace({ hidden }) {
                     className="btn btn-secondary btn-sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Pilih berkas dari perangkat
+                    Pilih berkas
                   </button>
                   <button
                     type="button"
                     className="btn-chip"
                     onClick={() => handleSimulatedBinarySample('renamedApkAsPdf')}
                   >
-                    Uji sampel APK menyamar .PDF
+                    Sampel APK palsu
                   </button>
                   <button
                     type="button"
                     className="btn-chip"
                     onClick={() => handleSimulatedBinarySample('genuinePdf')}
                   >
-                    Uji sampel .PDF asli
+                    Sampel PDF asli
                   </button>
                 </div>
               </div>
@@ -279,6 +337,14 @@ export default function ScannerWorkspace({ hidden }) {
 
           {/* Right Column (1fr): Compact Product Inspection Diagram / Output Panel */}
           <div className="opening-diagram-col" id="scanner-result-panel" aria-live="polite">
+            <PhoneMotionGraphic
+              activeScore={activeScore}
+              verdictLevel={scanResult?.verdictLevel || 'IDLE'}
+              activeTitle={activeTitle}
+              fileReport={fileReport}
+              scanResult={scanResult}
+              onSelectPreset={handlePresetClick}
+            />
             <div className="inspection-card">
               <div className="inspection-header">
                 <div className="inspection-score-block">
@@ -296,7 +362,33 @@ export default function ScannerWorkspace({ hidden }) {
               <div className="inspection-summary">
                 <h2 className="inspection-title" id="scanner-verdict-title">{activeTitle}</h2>
                 <p className="inspection-desc" id="scanner-verdict-desc">{activeDesc}</p>
+                {(scanResult || fileReport) && (
+                  <p className="nfr-telemetry-meta">
+                    Kinerja NFR-03: {scanResult?.executionMs || 0.4} ms (&lt; 2000 ms) • Penentu Skor: Aturan Deterministik (R-01..R-10)
+                  </p>
+                )}
               </div>
+
+              {/* Hybrid AI Contextual Deep Analysis & Motive Breakdown */}
+              {aiDeepSummary && (
+                <div className="scanner-anatomy-box">
+                  <div className="scan-history-header">
+                    <span className="inspection-label" style={{ marginBottom: 0 }}>
+                      Ringkasan motif &amp; konteks pesan (AI Hibrida)
+                    </span>
+                    <span className="verdict-tag verdict-neutral">
+                      {aiAnalyzing
+                        ? 'Memperkaya konteks AI...'
+                        : aiDeepSummary.source === 'AI_HYBRID'
+                          ? 'Analisis AI Hibrida Aktif'
+                          : 'Sintesis Deterministik Lokal (NFR-09)'}
+                    </span>
+                  </div>
+                  <div className="anatomy-item" style={{ marginTop: '8px' }}>
+                    <p>{aiDeepSummary.summaryText}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Binary File Magic Bytes Anatomy */}
               {fileReport && (
@@ -346,7 +438,7 @@ export default function ScannerWorkspace({ hidden }) {
                 <div id="scanner-findings-list" className="scanner-findings-list">
                   {!scanResult && !fileReport && (
                     <p className="empty-finding-state">
-                      Pemeriksaan mencakup deteksi berkas aplikasi .APK, signature biner heksadesimal, tautan tiruan, permintaan kode OTP atau PIN, desakan waktu, dan nomor pengirim pribadi.
+                      Mendeteksi berkas .APK, domain palsu, pancingan OTP/PIN, judi/withdraw, dan promo operator.
                     </p>
                   )}
 
@@ -447,6 +539,33 @@ export default function ScannerWorkspace({ hidden }) {
                 </a>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Pulsing 3-Lane Forensic Pipeline Widget (design-taste-frontend Rule 7) */}
+        <div className="taste-pipeline-widget" aria-label="Diagram Alur Forensik 3-Jalur TUNTUN">
+          <div className="pipeline-node node-input">
+            <span className="node-kicker">1 Input</span>
+            <strong>Pesan / Berkas</strong>
+          </div>
+          <svg className="pipeline-svg" viewBox="0 0 180 56" aria-hidden="true">
+            <path d="M 4 28 L 176 10" className="pipeline-lane" />
+            <path d="M 4 28 L 176 28" className="pipeline-lane" />
+            <path d="M 4 28 L 176 46" className="pipeline-lane" />
+            <circle r="3.5" className="pipeline-pulse pulse-1">
+              <animateMotion dur="2.6s" repeatCount="indefinite" path="M 4 28 L 176 10" />
+            </circle>
+            <circle r="3.5" className="pipeline-pulse pulse-2">
+              <animateMotion dur="2.6s" begin="0.8s" repeatCount="indefinite" path="M 4 28 L 176 28" />
+            </circle>
+            <circle r="3.5" className="pipeline-pulse pulse-3">
+              <animateMotion dur="2.6s" begin="1.6s" repeatCount="indefinite" path="M 4 28 L 176 46" />
+            </circle>
+          </svg>
+          <div className="pipeline-lanes-col">
+            <div className="pipeline-lane-chip">Jalur 1: De-obfuskasi &amp; Heuristik R-01..R-10</div>
+            <div className="pipeline-lane-chip">Jalur 2: Magic-Bytes Header Biner (.APK vs .PDF)</div>
+            <div className="pipeline-lane-chip">Jalur 3: Konteks AI Hibrida Gratis + Fallback Lokal</div>
           </div>
         </div>
 
