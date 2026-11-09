@@ -554,3 +554,420 @@ flowchart TB
 5. **ScoringEngine**: Mengagregasi seluruh jawaban sesi dari Simulator dan Detective menjadi skor ternormalisasi (`0–100`), menyusun daftar keputusan berisiko, indikator terlewat, kategori kemampuan yang sudah dikuasai, serta rekomendasi skenario/materi.
 6. **ActionGuideEngine**: Mengambil langkah-langkah panduan tanggap insiden berdasarkan `situation_type` (4 kondisi utama) maupun berdasarkan daftar `indicator_id` yang terlewat oleh pemain.
 7. **Scenario & Guide Repository**: Mengabstraksi sumber data (file JSON statis pada MVP atau panggilan `fetch()` ke REST API pada arsitektur backend).
+
+
+---
+
+## BAGIAN 6 — DETAILED DESIGN SETIAP MODUL
+
+Bagian ini merinci desain internal dari modul-modul utama Digital Guardian beserta fitur utilitas praktis (*Real-Time Heuristic Scam & Link Scanner*, *Interactive Incident Checklist*, *Report Generator*, dan *Verified Emergency Directory*).
+
+### 6.1 Modul Utilitas Praktis: Heuristic Scam, Link & File Scanner (`#scanner`)
+Fitur fungsional sehari-hari yang memungkinkan pengguna menempelkan teks pesan mencurigakan, URL, atau nama file yang baru mereka terima untuk dianalisis secara deterministik di sisi peramban (*100% client-side privacy*):
+- **Vektor Pemeriksaan (`analyzeMessageAndLinks`)**:
+  1. **Deteksi Ekstensi Berbahaya (`MALICIOUS_ATTACHMENT`)**: Mencocokkan pola RegEx terhadap ekstensi `.apk`, `.exe`, `.scr`, `.bat`, `.vbs` serta penyamaran *double extension* (`.pdf.apk`, `.jpg.apk`).
+  2. **Bedah Anatomi URL (`URL_ANATOMY_INSPECTOR`)**: Mengurai hostname URL, memverifikasi terhadap daftar *Official Domains* (`.co.id`, `.go.id`), mendeteksi *High-Risk Phishing TLDs* (`.vip`, `.xyz`, `.top`, `.click`, `.buzz`, `.my.id`), mendeteksi *Link Shorteners* (`bit.ly`, `s.id`, `tinyurl.com`), dan mengidentifikasi *Brand Impersonation* (pencatutan nama bank/ekspedisi pada domain asing).
+  3. **Deteksi Permintaan Kredensial (`CREDENTIAL_HARVESTING`)**: Mendeteksi kata kunci `OTP`, `PIN`, `CVV`, `CVC`, `kata sandi`, `akses SMS`, `Izinkan Semua`.
+  4. **Deteksi Manipulasi Urgensi & Umpan Finansial**: Mendeteksi ancaman waktu sempit (`dalam 15 menit`, `diblokir otomatis`) serta skema *advance-fee / deposit tugas VIP*.
+- **Output Terhubung ke Action Guide**: Menghasilkan indeks risiko (`0–100`), rincian kutipan kalimat berbahaya, dan tombol rujukan langsung menuju situasi *Action Guide* yang relevan (`#guide-sit-1` s.d. `#guide-sit-4`).
+
+### 6.2 Modul Utama A: Scam Simulator (`#simulator`)
+- **Struktur Skenario (`SCENARIO`)**: Menyimpan metadata skenario (`scenario_id`, `title`, `description`, `contact_name`, `contact_status`, `initial_node_id`).
+- **Struktur Node (`SCENARIO_NODE`)**: Merepresentasikan tahapan percakapan (`node_id`, `step_order`, `bot_messages[]`, `choices[]`).
+- **Struktur Pilihan (`CHOICE`)**: Memiliki atribut `choice_id`, `label`, `next_node_id` (`string | null`), `consequence_type` (`BEST | SAFE | ELEVATED | DANGEROUS | GAME_OVER | RECOVERY`), `risk_level`, `score_delta`, `feedback_title`, dan `feedback_text`.
+- **Mekanisme Percabangan & Penilaian**:
+  - Ketika pengguna memilih opsi `CHOICE`, `ScenarioEngine` memvalidasi bahwa pilihan tersebut sah untuk node aktif, mengakumulasikan `score_delta` ke skor skenario (dibatasi pada rentang `0–100`), mencatat jumlah keputusan aman vs keputusan berisiko ke `sessionState`, dan menampilkan `FeedbackBanner`.
+  - Saat pengguna menekan tombol lanjut, sistem berpindah ke `SCENARIO_NODE` yang dirujuk oleh `next_node_id`. Apabila `next_node_id === null`, skenario selesai dan skor disimpan ke `Guardian Profile`.
+
+### 6.3 Modul Utama B: Scam Detective (`#detective`)
+- **Struktur Kasus & Bukti (`SCENARIO_EVIDENCE`)**: Mendukung multi-kasus investigasi (*Undian .VIP*, *Panggilan HRD Palsu*, *Tagihan Bea Cukai Palsu*). Setiap kasus memiliki metadata pengirim dan blok-blok bukti interaktif.
+- **Indikator Risiko Target (`isRisk: true`) vs Elemen Pengecoh (`isRisk: false`)**:
+  - Untuk memastikan pengujian berpikir kritis yang nyata, bukti kasus memuat **Indikator Risiko Target** sekaligus **Elemen Pengecoh (Normal/Safe Statements)**.
+- **Mekanisme Evaluasi Jawaban & Perhitungan Skor (`FR-09`, `FR-14`)**:
+  - **Validasi Input (`FR-14`)**: Jika pengguna menekan *"Kirim Laporan Investigasi"* saat belum ada satu pun elemen yang dipilih (`selectedIds.length === 0`), sistem menampilkan `validation-banner` dan menolak evaluasi kosong.
+  - **Rumus Skor Investigasi Deterministik**:
+    $$\text{Skor Kasus} = \max\left(0, \text{round}\left(\frac{\text{True Positives}}{\text{Total Target Indicators}} \times 100\right) - (\text{False Positives} \times 15)\right)$$
+  - Menampilkan penjelasan bukti pendukung untuk setiap indikator yang **Tepat Dikenali (True Positive)**, **Indikator Terlewat (False Negative)**, maupun **Tuduhan Keliru (False Positive)**.
+
+### 6.4 Modul Utama C: Action Guide & Emergency Toolkit (`#guide` & `#emergency-tools`)
+- **Pengelompokan 4 Situasi Insiden (`FR-10`)**:
+  1. `RECEIVED_SUSPICIOUS_MESSAGE` (Baru menerima pesan mencurigakan)
+  2. `CLICKED_MALICIOUS_LINK` (Sudah mengeklik tautan / mengunduh `.apk`)
+  3. `SUBMITTED_CREDENTIALS_OR_OTP` (Sudah memasukkan kata sandi / PIN / OTP)
+  4. `TRANSFERRED_MONEY` (Sudah melakukan transfer uang ke penipu)
+- **Checklist Penyelamatan Interaktif**: Setiap situasi dilengkapi *checkbox* interaktif (`guide-step-check`) yang tersimpan di `sessionStorage` dan menghitung persentase progres mitigasi darurat (`0%`–`100%`).
+- **Generator Kronologi Laporan Resmi & Peringatan Grup WA**: Menyusun draf laporan kronologi formal untuk Call Center Bank / CekRekening.id / SPKT Kepolisian serta draf peringatan singkat untuk dibagikan ke grup WhatsApp keluarga.
+- **Direktori Kontak Darurat Terverifikasi**: Menyediakan pencarian cepat nomor Call Center resmi Bank Nasional, E-Wallet, OJK 157, CekRekening.id, dan Patroli Siber untuk mencegah korban menghubungi CS palsu di media sosial.
+
+### 6.5 Modul Utama D: Guardian Profile (`#guardian-profile-card`)
+- **Agregasi Skor Sesi (`FR-11`, `FR-12`)**: Menghitung rata-rata skor dari seluruh skenario Simulator dan kasus Detective yang telah diselesaikan dalam sesi aktif (`sessionId`), merangkum total keputusan berisiko, jumlah indikator tepat/keliru, kategori kemampuan terkuat, serta rekomendasi spesifik berdasarkan indikator yang terlewat.
+- **Fitur Salin Ringkasan & Reset Sesi (`FR-13`)**: Menyediakan tombol *Salin Ringkasan Sesi* ke *clipboard* dan tombol *Reset Seluruh Sesi* yang menghapus state lama di `sessionStorage` lalu membentuk `sessionId` baru yang bersih.
+
+---
+
+## BAGIAN 7 — DATABASE DESIGN DAN ERD
+
+### 7.1 Evaluasi Entitas dan Strategi Penyimpanan (JSON + SessionStorage pada MVP vs PostgreSQL pada Full-Stack)
+Sesuai pedoman studi kasus, ke-12 entitas dievaluasi secara kritis:
+1. **Pada Implementasi MVP (Client-Side Statis & Ephemeral Session)**:
+   - Entitas katalog konten (`SCENARIO`, `SCENARIO_NODE`, `CHOICE`, `SCENARIO_EVIDENCE`, `RISK_INDICATOR`, `SCENARIO_INDICATOR`, `EVIDENCE_INDICATOR`, `ACTION_GUIDE`, `INDICATOR_ACTION`) disimpan sebagai **struktur data JSON statis tervalidasi** di dalam aplikasi.
+   - Entitas transaksional sesi (`LEARNING_SESSION`, `SESSION_ANSWER`, `SESSION_RESULT`) disimpan sebagai **objek JSON sementara di `window.sessionStorage`** selama tab peramban pengguna aktif.
+2. **Pada Implementasi Full-Stack / Fase Ekstensi (PostgreSQL)**:
+   - Ke-12 entitas diimplementasikan menjadi tabel relasional terindeks dalam **PostgreSQL** dengan normalisasi **3NF (Third Normal Form)**.
+
+### 7.2 Entity Relationship Diagram (Mermaid `erDiagram`)
+
+```mermaid
+erDiagram
+    SCENARIO ||--o{ SCENARIO_NODE : "memiliki tahapan (1:N)"
+    SCENARIO ||--o{ SCENARIO_EVIDENCE : "memiliki bukti kasus (1:N)"
+    SCENARIO ||--o{ SCENARIO_INDICATOR : "memiliki target indikator (1:N)"
+    SCENARIO ||--o{ LEARNING_SESSION : "dimainkan dalam sesi (1:N)"
+
+    SCENARIO_NODE ||--o{ CHOICE : "menyediakan pilihan (1:N)"
+    SCENARIO_NODE o|--o{ CHOICE : "dirujuk oleh next_node_id (0..1:N)"
+
+    RISK_INDICATOR ||--o{ SCENARIO_INDICATOR : "digunakan pada skenario (1:N)"
+    RISK_INDICATOR ||--o{ EVIDENCE_INDICATOR : "didukung oleh bukti (1:N)"
+    RISK_INDICATOR ||--o{ INDICATOR_ACTION : "dipetakan ke panduan (1:N)"
+
+    SCENARIO_EVIDENCE ||--o{ EVIDENCE_INDICATOR : "mendukung indikator (1:N)"
+    ACTION_GUIDE ||--o{ INDICATOR_ACTION : "merespons indikator (1:N)"
+
+    LEARNING_SESSION ||--o{ SESSION_ANSWER : "mencatat jawaban (1:N)"
+    LEARNING_SESSION ||--o| SESSION_RESULT : "menghasilkan evaluasi (1:0..1)"
+
+    CHOICE o|--o{ SESSION_ANSWER : "dipilih pada jawaban simulator (0..1:N)"
+    SCENARIO_INDICATOR o|--o{ SESSION_ANSWER : "dipilih pada jawaban detective (0..1:N)"
+
+    SCENARIO {
+        varchar(50) scenario_id PK
+        varchar(150) title
+        text description
+        varchar(20) mode "CHECK (SIMULATOR, DETECTIVE)"
+        varchar(20) difficulty "EASY, MEDIUM, HARD"
+        boolean is_active
+    }
+
+    SCENARIO_NODE {
+        varchar(50) node_id PK
+        varchar(50) scenario_id FK
+        int step_order
+        varchar(100) sender_name
+        varchar(100) sender_meta
+        jsonb messages
+        boolean is_initial
+    }
+
+    CHOICE {
+        varchar(50) choice_id PK
+        varchar(50) node_id FK
+        varchar(50) next_node_id FK "NULLABLE (Akhir Skenario)"
+        text choice_text
+        varchar(30) consequence_type "BEST, SAFE, ELEVATED, DANGEROUS, GAME_OVER, RECOVERY"
+        varchar(50) risk_level
+        int score_delta
+        varchar(150) feedback_title
+        text feedback_text
+    }
+
+    SCENARIO_EVIDENCE {
+        varchar(50) evidence_id PK
+        varchar(50) scenario_id FK
+        varchar(30) evidence_type "SENDER, MESSAGE_CLAIM, URL, ATTACHMENT"
+        text content_text
+        boolean is_decoy_safe
+        int display_order
+    }
+
+    RISK_INDICATOR {
+        varchar(50) indicator_id PK
+        varchar(120) name
+        varchar(80) category
+        varchar(20) severity "LOW, MEDIUM, HIGH, CRITICAL"
+        text general_explanation
+    }
+
+    SCENARIO_INDICATOR {
+        varchar(50) scenario_indicator_id PK
+        varchar(50) scenario_id FK
+        varchar(50) indicator_id FK
+        int weight_score
+        boolean is_target
+    }
+
+    EVIDENCE_INDICATOR {
+        varchar(50) evidence_indicator_id PK
+        varchar(50) evidence_id FK
+        varchar(50) indicator_id FK
+        text evidence_explanation
+    }
+
+    ACTION_GUIDE {
+        varchar(50) guide_id PK
+        varchar(50) situation_type "RECEIVED_MSG, CLICKED_LINK, SHARED_OTP, TRANSFERRED_FUNDS"
+        varchar(150) title
+        varchar(50) risk_status
+        jsonb action_steps
+        text official_channels_note
+        int display_order
+    }
+
+    INDICATOR_ACTION {
+        varchar(50) indicator_action_id PK
+        varchar(50) indicator_id FK
+        varchar(50) guide_id FK
+        int priority_order
+    }
+
+    LEARNING_SESSION {
+        uuid session_id PK
+        varchar(50) scenario_id FK
+        varchar(20) status "IN_PROGRESS, COMPLETED, RESET"
+        timestamp started_at
+        timestamp completed_at "NULLABLE"
+    }
+
+    SESSION_ANSWER {
+        uuid answer_id PK
+        uuid session_id FK
+        varchar(20) answer_type "CHECK (CHOICE, INDICATOR)"
+        varchar(50) choice_id FK "NULLABLE"
+        varchar(50) scenario_indicator_id FK "NULLABLE"
+        int awarded_score
+        timestamp answered_at
+    }
+
+    SESSION_RESULT {
+        uuid result_id PK
+        uuid session_id FK "UNIQUE (1:1 dengan LEARNING_SESSION)"
+        int final_score "CHECK (0 <= final_score <= 100)"
+        int safe_decisions_count
+        int risky_decisions_count
+        int missed_indicators_count
+        jsonb missed_indicators_summary
+        jsonb recommendations
+        timestamp generated_at
+    }
+```
+
+### 7.3 Aturan Validasi, Constraint, Indeks, dan Retensi Data
+1. **Check Constraints**:
+   - `SCENARIO.mode IN ('SIMULATOR', 'DETECTIVE')`
+   - `SESSION_ANSWER`: Constraint eksklusif (`(answer_type = 'CHOICE' AND choice_id IS NOT NULL AND scenario_indicator_id IS NULL) OR (answer_type = 'INDICATOR' AND scenario_indicator_id IS NOT NULL AND choice_id IS NULL)`).
+   - `SESSION_RESULT.final_score BETWEEN 0 AND 100` dan `UNIQUE (session_id)` agar setiap sesi hanya memiliki tepat satu hasil akhir.
+2. **Indeks Kinerja**:
+   - `idx_scenario_node_scen` pada `SCENARIO_NODE(scenario_id, step_order)`
+   - `idx_choice_node` pada `CHOICE(node_id)`
+   - `idx_session_answer_ses` pada `SESSION_ANSWER(session_id)`
+3. **Aturan Penyimpanan & Penghapusan**:
+   - Pada MVP, data sesi di `sessionStorage` otomatis dihapus oleh browser ketika pengguna menutup tab, atau dihapus seketika saat tombol **Reset Seluruh Sesi** ditekan.
+
+---
+
+## BAGIAN 8 — API DESIGN (REST API UNTUK MODE FULL-STACK OPSIONAL)
+
+Pada mode MVP Client-Side SPA, aplikasi menggunakan *Local Repository* tanpa memerlukan jaringan backend. Apabila mode Backend REST API diaktifkan, berikut adalah kontrak 8 endpoint RESTful yang konsisten:
+
+| No | Method & Endpoint | Tujuan | Request Params / Body | Response Sukses (200/201) | Validasi & Error Codes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `GET /api/v1/scenarios` | Mengambil daftar skenario berdasarkan mode (`SIMULATOR` / `DETECTIVE`). | Query: `?mode=SIMULATOR` | `{ "status": "success", "data": [{ "scenarioId": "courier", "title": "...", "mode": "SIMULATOR" }] }` | `400 Bad Request` jika parameter `mode` tidak valid. |
+| **2** | `GET /api/v1/scenarios/:scenarioId` | Mengambil detail skenario beserta node awal atau daftar bukti kasus. | Path: `scenarioId` | `{ "status": "success", "data": { "scenarioId": "courier", "initialNode": {...}, "evidences": [...] } }` | `404 Not Found` jika `scenarioId` tidak ditemukan. |
+| **3** | `POST /api/v1/sessions` | Memulai sesi pembelajaran baru (`LEARNING_SESSION`). | Body: `{ "scenarioId": "courier" }` | `{ "status": "success", "data": { "sessionId": "uuid-v4", "status": "IN_PROGRESS", "currentScore": 100 } }` | `400 Bad Request` jika `scenarioId` kosong; `404` jika skenario tidak aktif. |
+| **4** | `GET /api/v1/sessions/:sessionId/nodes/:nodeId` | Mengambil pesan dan daftar pilihan pada tahap/node simulasi tertentu. | Path: `sessionId`, `nodeId` | `{ "status": "success", "data": { "nodeId": "n2", "messages": [...], "choices": [...] } }` | `404 Not Found` jika sesi atau node tidak ditemukan. |
+| **5** | `POST /api/v1/sessions/:sessionId/choices` | Mengirim pilihan tindakan pemain pada *Scam Simulator*. | Body: `{ "nodeId": "n1", "choiceId": "c1_safe" }` | `{ "status": "success", "data": { "riskLevel": "Aman", "scoreDelta": 0, "currentScore": 100, "feedbackTitle": "...", "feedbackText": "...", "nextNodeId": "n3" } }` | `422 Unprocessable Entity` jika `choiceId` bukan milik `nodeId` aktif (`FR-14`). |
+| **6** | `POST /api/v1/sessions/:sessionId/investigations` | Mengirim daftar indikator risiko yang dipilih pada *Scam Detective*. | Body: `{ "selectedIndicatorIds": ["unverified-number", "fake-domain"] }` | `{ "status": "success", "data": { "score": 75, "hits": 3, "falsePositives": 0, "missed": 1, "explanations": [...] } }` | `400 Bad Request` jika array `selectedIndicatorIds` kosong (`FR-14`). |
+| **7** | `GET /api/v1/sessions/:sessionId/result` | Mengambil rangkuman akhir *Guardian Profile* (`SESSION_RESULT`). | Path: `sessionId` | `{ "status": "success", "data": { "finalScore": 90, "safeDecisions": 3, "riskyDecisions": 0, "missedIndicators": [], "recommendations": [...] } }` | `404 Not Found` jika sesi belum ada; `409 Conflict` jika sesi belum selesai. |
+| **8** | `GET /api/v1/action-guides` | Mengambil panduan tindakan berdasarkan situasi (`situationType`) atau indikator. | Query: `?situation=CLICKED_LINK` | `{ "status": "success", "data": [{ "guideId": "g2", "title": "...", "steps": [...], "emergencyContacts": [...] }] }` | `400 Bad Request` jika filter situasi tidak dikenali. |
+
+---
+
+## BAGIAN 9 — SEQUENCE DIAGRAM
+
+### 9.1 Sequence Diagram 1: Pemain Menjalankan Scam Simulator
+
+```mermaid
+sequenceDiagram
+    actor Player as Pemain
+    participant UI as ScamSimulatorUI (React/DOM)
+    participant Ctx as LearningSessionState
+    participant Engine as ScenarioEngine
+    participant Repo as ScenarioRepository (JSON/API)
+
+    Player->>UI: 1. Pilih Skenario "Kurir Paket (.APK)"
+    UI->>Ctx: initSimulator("courier")
+    Ctx->>Repo: getScenarioById("courier")
+    Repo-->>Ctx: Scenario + Initial Node (Step 1)
+    Ctx-->>UI: Render pesan kurir & 3 tombol pilihan
+    
+    Player->>UI: 2. Klik Pilihan ("Cek resi di web resmi")
+    UI->>Engine: validateAndEvaluateChoice(nodeId=1, choiceId="c3")
+    Engine->>Repo: getChoiceRule("courier", 1, "c3")
+    Repo-->>Engine: { consequence: "BEST", scoreDelta: 0, nextStep: 4 }
+    Engine-->>Ctx: Update skor & catat SESSION_ANSWER
+    Ctx-->>UI: Tampilkan Feedback Edukatif & tombol "Lanjutkan"
+    
+    Player->>UI: 3. Klik "Lanjutkan Percakapan"
+    UI->>Engine: getNextNode(nextStep=4)
+    Engine-->>UI: Render Node 4 (Resi tidak terdaftar -> Blokir & Lapor)
+```
+
+### 9.2 Sequence Diagram 2: Pemain Melakukan Investigasi Scam Detective
+
+```mermaid
+sequenceDiagram
+    actor Player as Pemain
+    participant UI as ScamDetectiveUI
+    participant Engine as AnalysisEngine
+    participant Ctx as LearningSessionState
+
+    Player->>UI: 1. Pilih Kasus #01 & periksa bukti pesan
+    Player->>UI: 2. Klik/tandai indikator mencurigakan (aria-pressed="true")
+    Player->>UI: 3. Klik "Kirim Laporan Investigasi"
+    
+    alt Tidak ada indikator yang dipilih (FR-14)
+        UI-->>Player: Tampilkan banner peringatan "Pilih minimal satu indikator"
+    else Minimal 1 indikator dipilih
+        UI->>Engine: evaluateDetectiveCase(caseKey, selectedIds)
+        Engine->>Engine: Hitung True Positives, False Positives (Pengecoh), & Missed
+        Engine-->>Ctx: Simpan hasil kasus ke sessionState.detective.caseResults
+        Ctx-->>UI: Render rincian bukti pendukung (Tepat, Terlewat, Keliru)
+    end
+```
+
+### 9.3 Sequence Diagram 3: Penyelesaian Sesi dan Pembentukan Guardian Profile
+
+```mermaid
+sequenceDiagram
+    actor Player as Pemain
+    participant UI as GuardianProfileUI
+    participant ScoreEng as ScoringEngine
+    participant Store as Browser sessionStorage
+
+    UI->>ScoreEng: updateUnifiedGuardianProfileUI(sessionState)
+    ScoreEng->>ScoreEng: Agregasi skor Simulator & Detective (0-100)
+    ScoreEng->>ScoreEng: Identifikasi kategori kuat & indikator terlewat
+    ScoreEng->>Store: Simpan state sesi ke sessionStorage
+    ScoreEng-->>UI: Render Skor Sesi, Statistik Risiko, & Rekomendasi Latihan
+    
+    opt Pemain klik "Reset Seluruh Sesi" (FR-13)
+        Player->>UI: Klik "Reset Seluruh Sesi"
+        UI->>Store: sessionStorage.removeItem("dg_learning_session_v2")
+        UI->>UI: Buat sessionId baru & kembalikan seluruh modul ke kondisi awal
+    end
+```
+
+---
+
+## BAGIAN 10 — SECURITY DAN PRIVACY DESIGN
+
+### 10.1 Analisis Keamanan Berdasarkan Arsitektur MVP
+1. **Validasi Input & Sanitasi XSS (`NFR-05`)**:
+   - Seluruh input pengguna pada **Pemindai Pesan & Link (`#scanner`)** dan **Generator Draf Laporan (`#emergency-tools`)** di-*escape* menggunakan fungsi sanitasi `escapeHtml()` sebelum dirender ke DOM, mencegah *Reflected/DOM-based Cross-Site Scripting (XSS)*.
+2. **Keamanan Tautan & Bukti Fiktif**:
+   - Tautan berbahaya dalam skenario disajikan sebagai elemen tombol interaktif (`<button class="evidence-clue-btn">`) atau teks yang tidak pernah menavigasi browser pengguna ke domain *phishing* aktif.
+3. **Minimalisasi Data & Privasi (`NFR-06`, `NFR-07`)**:
+   - Sistem tidak memiliki kolom input kata sandi atau OTP nyata.
+   - Teks chat WhatsApp/SMS yang ditempelkan pengguna pada modul **Pemindai Pesan (`#scanner`)** diproses 100% di memori lokal peramban (*client-side JavaScript*) dan tidak pernah dikirim ke server eksternal mana pun.
+4. **Retensi Data Sesi**:
+   - Data sesi disimpan di `window.sessionStorage` yang terikat hanya pada masa hidup tab peramban saat itu.
+5. **Relevansi CSRF, Rate Limiting, & API Key**:
+   - Karena MVP berjalan sebagai aplikasi statis tanpa autentikasi berbasis *cookie* dan tanpa pemanggilan LLM eksternal, ancaman **CSRF** dan **kebocoran API Key AI** tidak berlaku (*Not Applicable*) pada MVP. Apabila Backend API diaktifkan di masa depan, diterapkan *IP-based Rate Limiting* (misal: 60 req/menit) dan validasi skema JSON ketat.
+
+### 10.2 Threat Model Sederhana (STRIDE Adaptation)
+
+| Aset yang Dilindungi | Potensi Ancaman | Dampak | Strategi Mitigasi pada Desain |
+| :--- | :--- | :--- | :--- |
+| **Peramban Pengguna (DOM)** | **DOM-based XSS** melalui input teks bebas pada Pemindai Pesan atau Generator Laporan. | Eksekusi skrip jahat di peramban pengguna. | Sanitasi wajib dengan `escapeHtml()` / `textContent` dan penerapan header *Content Security Policy* (CSP). |
+| **Privasi Teks Pesan Pengguna** | **Kebocoran Data Pribadi** saat pengguna menempelkan chat asli ke pemindai. | Informasi pribadi di dalam chat pengguna terekam pihak ketiga. | Pemrosesan heuristik dilakukan 100% secara lokal di peramban tanpa panggilan jaringan keluar. |
+| **Integritas Skor Evaluasi** | **Manipulasi State Sesi (`sessionStorage` Tampering)** atau pengiriman input kosong (`FR-14`). | Skor tidak akurat atau aplikasi mengalami *crash*. | Validasi skema saat membaca `sessionStorage` dengan *fallback* otomatis ke `defaultSessionState` serta pencegahan submit kosong. |
+| **Keamanan Pengguna dari Link Simulasi** | **Klik Tidak Sengaja pada URL Phishing** di dalam contoh kasus. | Pengguna mengunjungi domain berbahaya sungguhan. | Seluruh URL simulasi menggunakan elemen `<button>` non-navigasi dan domain fiktif tidak aktif. |
+
+---
+
+## BAGIAN 11 — DEPLOYMENT ARCHITECTURE
+
+### 11.1 Lingkungan Development & Production
+- **Development Environment**: Dijalankan secara lokal menggunakan server statis / Vite Dev Server (`http://localhost:5173` atau `python -m http.server 8080`), terintegrasi dengan Git untuk manajemen versi.
+- **Production Environment**: Di-deploy ke layanan **Global Static CDN Hosting** (**Vercel** atau **Cloudflare Pages**) yang terhubung langsung ke cabang `main` repositori GitHub.
+  - **Keunggulan untuk MVP**: Biaya Rp 0 (Gratis), sertifikat SSL/HTTPS otomatis, waktu muat global sangat cepat, dan bebas risiko *server/database cold-start* saat diuji oleh juri.
+
+### 11.2 Deployment Diagram (Mermaid)
+
+```mermaid
+flowchart LR
+    Dev["👩‍💻 Developer\n(Git Push ke GitHub)"]
+    GH["🐙 GitHub Repository\n(main branch)"]
+    CI["⚙️ CI/CD Build Pipeline\n(Vercel / Cloudflare Pages)\nLint, Test, & Asset Bundling"]
+    CDN["🌐 Global Edge CDN\n(HTTPS + Security Headers)"]
+    User["📱 Peramban Pengguna & Juri\n(Desktop / Mobile)"]
+
+    Dev --> GH
+    GH -- "Webhook Trigger" --> CI
+    CI -- "Deploy Static Bundle" --> CDN
+    User -- "Akses URL Publik (HTTPS)" --> CDN
+```
+
+---
+
+## BAGIAN 12 — TESTING STRATEGY DAN TEST CASES
+
+### 12.1 Strategi Pengujian Berlapis
+1. **Unit Testing**: Menguji fungsi deterministik pada mesin heuristik pemindai pesan (`analyzeMessageAndLinks`), transisi node Simulator, dan rumus penalti *Scam Detective*.
+2. **Functional & Integration Testing**: Menguji keterkaitan antar-modul (misal: menyelesaikan skenario di Simulator langsung memperbarui skor dan jumlah keputusan berisiko di *Guardian Profile*).
+3. **Security Testing**: Menguji input *payload* XSS (`<script>alert(1)</script>`) pada kolom Pemindai Pesan dan Generator Laporan untuk memastikan teks dirender aman sebagai string biasa.
+4. **Responsive & Accessibility Testing**: Menguji tampilan pada lebar `360px`, `760px`, `1050px`, dan `1440px`, serta navigasi tombol `Tab` dan `Enter`/`Space`.
+
+### 12.2 Tabel Test Case Utama
+
+| Test Case ID | Modul | Skenario Pengujian | Input | Expected Result (Hasil yang Diharapkan) |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-01** | Scam Simulator | Pilihan simulator yang aman & cabang verifikasi | Pilih skenario Kurir APK -> Pilih opsi C (*"Cek nomor resi di situs resmi"*) | Skor tetap `100/100`, status risiko `Aman Terverifikasi`, dan percakapan bercabang ke Langkah 4 (Resi tidak terdaftar). |
+| **TC-02** | Scam Simulator | Pilihan simulator yang berisiko tinggi | Pilih skenario Kurir APK -> Pilih opsi A (*"Langsung unduh Surat_Foto_Paket.apk"*) | Skor berkurang `-40` menjadi `60/100`, status risiko `Bahaya Tinggi`, percakapan bercabang ke Langkah 2 (Permintaan izin akses SMS), dan *Keputusan Berisiko* di Guardian Profile bertambah `+1`. |
+| **TC-03** | Scam Detective | Menandai seluruh indikator target dengan benar tanpa pengecoh | Pilih Kasus #01 -> Klik 4 indikator bahaya (tanpa mengeklik kalimat pengecoh) -> Klik *"Kirim Laporan Investigasi"* | Skor kasus `100/100`, `Indikator Tepat: 4/4`, `Tuduhan Keliru: 0`, dan menampilkan 4 kartu penjelasan bukti pendukung. |
+| **TC-04** | Scam Detective | Indikator terlewat & penalti elemen pengecoh | Pilih Kasus #01 -> Klik 2 indikator bahaya + 1 kalimat pengecoh normal -> Klik *"Kirim Laporan"* | Sistem menghitung `Indikator Tepat: 2/4`, `Tuduhan Keliru: 1 Pengecoh`, menerapkan penalti `-15`, dan menampilkan daftar *Indikator Terlewat*. |
+| **TC-05** | Scam Detective | Validasi input kosong (`FR-14`) | Pastikan belum ada elemen bukti yang diklik -> Klik *"Kirim Laporan Investigasi"* | Sistem menolak evaluasi dan menampilkan banner peringatan merah: *"Pilih minimal satu bagian/indikator pada bukti di atas sebelum mengirim laporan investigasi."* |
+| **TC-06** | Action Guide & Checklist | Mencetang langkah mitigasi darurat | Centang 4 langkah pada Situasi 01 | Bar progres mitigasi naik menjadi `25%` (`4 dari 16 langkah selesai`) dan tetap tersimpan saat halaman di-*refresh*. |
+| **TC-07** | Guardian Profile | Pengulangan / Reset seluruh sesi (`FR-13`) | Klik tombol *"Reset Seluruh Sesi"* pada kartu Guardian Profile | `sessionStorage` dibersihkan, `sessionId` baru dibuat, skor kembali ke `-- / 100`, dan seluruh pilihan Simulator/Detective kembali ke awal. |
+| **TC-08** | Scam Scanner | Memindai pesan berisi file `.apk` dan domain `.vip` + uji XSS | Masukkan teks berisi `Surat.pdf.apk`, `http://bca-tarif.vip`, dan `<img src=x onerror=alert(1)>` -> Klik *"Analisis Risiko"* | Indeks risiko `100/100 (Bahaya Tinggi)`, menampilkan anatomi file `.apk` & domain `.vip`, serta merender tag HTML secara aman tanpa mengeksekusi skrip. |
+
+---
+
+## BAGIAN 13 — REQUIREMENT TRACEABILITY MATRIX (RTM)
+
+| ID FR | Nama Kebutuhan Fungsional | Use Case Terkait | Activity Diagram | Komponen Sistem / UI | Entitas ERD / API Endpoint | Test Case ID |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **FR-01** | Menampilkan Halaman Utama | UC-01 | AD-01 | `HeroSection`, `Header` | `SCENARIO` / `GET /scenarios` | TC-01 |
+| **FR-02** | Memilih Mode dan Skenario | UC-02 | AD-01, AD-02 | `ScenarioSelector`, `CaseTabs` | `SCENARIO` / `GET /scenarios/:id` | TC-01, TC-03 |
+| **FR-03** | Membuat Sesi Pembelajaran | UC-01, UC-02 | AD-01, AD-02 | `LearningSessionState` | `LEARNING_SESSION` / `POST /sessions` | TC-01, TC-07 |
+| **FR-04** | Menampilkan Percakapan Simulasi | UC-03 | AD-01 | `ChatViewport`, `ChoicePanel` | `SCENARIO_NODE`, `CHOICE` | TC-01, TC-02 |
+| **FR-05** | Memproses Pilihan Pemain (Branching) | UC-03, UC-04 | AD-01 | `ScenarioEngine` | `CHOICE`, `SESSION_ANSWER` / `POST /choices` | TC-01, TC-02 |
+| **FR-06** | Mengevaluasi Keputusan Simulasi | UC-04 | AD-01 | `ScenarioEngine`, `ScoringEngine` | `CHOICE`, `SESSION_ANSWER` | TC-01, TC-02 |
+| **FR-07** | Menampilkan Feedback Keputusan | UC-05 | AD-01 | `FeedbackBanner` | `CHOICE` | TC-01, TC-02 |
+| **FR-08** | Menampilkan Bukti Investigasi | UC-06 | AD-02 | `EvidenceViewer` | `SCENARIO_EVIDENCE` | TC-03, TC-04 |
+| **FR-09** | Mengevaluasi Indikator Risiko | UC-07, UC-08 | AD-02 | `AnalysisEngine`, `ScamScanner` | `RISK_INDICATOR`, `SCENARIO_INDICATOR`, `EVIDENCE_INDICATOR` | TC-03, TC-04, TC-08 |
+| **FR-10** | Menampilkan Action Guide | UC-09 | AD-03 | `ActionGuideSection`, `EmergencyTools` | `ACTION_GUIDE`, `INDICATOR_ACTION` / `GET /action-guides` | TC-06 |
+| **FR-11** | Menghitung Hasil Pembelajaran | UC-08, UC-10 | AD-04 | `ScoringEngine` | `SESSION_RESULT` / `GET /result` | TC-02, TC-03 |
+| **FR-12** | Menampilkan Guardian Profile | UC-10 | AD-04 | `GuardianProfileCard` | `SESSION_RESULT` / `GET /result` | TC-03, TC-07 |
+| **FR-13** | Mengulang Skenario / Reset Sesi | UC-11 | AD-01, AD-04 | `LearningSessionState` | `LEARNING_SESSION` | TC-07 |
+| **FR-14** | Menangani Jawaban Tidak Valid | UC-04, UC-07 | AD-01, AD-02 | `AnalysisEngine`, `ValidationBanner` | `SESSION_ANSWER` | TC-05, TC-08 |
+
+---
+
+## BAGIAN 14 — REKOMENDASI TEKNOLOGI DAN TAHAPAN IMPLEMENTASI
+
+### 14.1 Rekomendasi Stack Teknologi
+
+| Lapisan | Teknologi yang Direkomendasikan | Alasan Pemilihan | Alternatif | Kelebihan & Kekurangan |
+| :--- | :--- | :--- | :--- | :--- |
+| **Frontend UI & Architecture** | **React 18 (TypeScript + Vite)** atau **Modular Vanilla ES6+ dengan Design Tokens CSS** | Cepat, mendukung pemisahan komponen UI dan *Domain Engine* deterministik tanpa *overhead* server. | Next.js / Vue 3 | (+) Sangat cepat, *bundle* kecil, mudah di-deploy.<br>(-) Tidak menggunakan SSR (tidak dibutuhkan untuk aplikasi simulasi interaktif). |
+| **Styling & Design System** | **Vanilla CSS Custom Properties (`--dp-*` Software Design Tokens)** | Presisi tinggi mengikuti *Minimalist Software Design System* (`#fcfcfd`, `#16191f`, `#074ce0`), nol ketergantungan *runtime*. | Tailwind CSS | (+) Kontrol penuh atas spesifisitas, kontras, dan *reduced-motion*.<br>(-) Penulisan kelas CSS dilakukan secara eksplisit. |
+| **Penyimpanan Data (MVP)** | **Structured JSON + `window.sessionStorage`** | Memenuhi batasan MVP tanpa login, 100% privasi terjaga, dan tahan terhadap *page refresh*. | IndexedDB / PostgreSQL | (+) Nol konfigurasi database, kecepatan baca instan.<br>(-) Hanya bertahan selama sesi tab peramban aktif (sesuai spesifikasi MVP). |
+| **Backend & DB (Fase 2 Opsional)** | **Node.js (Fastify/Express) + PostgreSQL** | Konsisten menggunakan JavaScript/TypeScript dari ujung ke ujung; PostgreSQL mendukung tipe `JSONB` dan constraint relasional kuat. | Go + MySQL | (+) Ekosistem luas, mudah dimigrasi dari skema JSON MVP.<br>(-) Memerlukan biaya hosting server jika keluar dari *free tier*. |
+| **Hosting & CI/CD** | **Vercel / Cloudflare Pages** | Deployment otomatis dari GitHub, CDN global gratis, HTTPS bawaan. | Netlify / GitHub Pages | (+) Ketersediaan tinggi, waktu *build* < 30 detik. |
+
+### 14.2 Tahapan Implementasi yang Direkomendasikan
+1. **Tahap 1 — Fondasi Design System & Kontrak Data**: Menerapkan token CSS (`--dp-*`), tipografi `Host Grotesk` & `Instrument Sans`, serta menyusun struktur data skenario Simulator, kasus Detective, dan direktori darurat.
+2. **Tahap 2 — Implementasi Deterministic Engines**: Membangun logika *Heuristic Scam & Link Scanner*, *Scenario Branching Engine*, dan *Detective Evaluation Engine* beserta validasi input (`FR-14`).
+3. **Tahap 3 — Integrasi Komponen Interaktif & Action Guide**: Menghubungkan *Interactive Emergency Checklist*, *Generator Draf Laporan Insiden*, *Direktori Call Center Resmi*, dan *Unified Guardian Profile* dengan persistensi `sessionStorage`.
+4. **Tahap 4 — Pengujian & Publikasi**: Menguji seluruh skenario sesuai *Test Cases* (`TC-01` s.d. `TC-08`), memverifikasi responsivitas serta aksesibilitas keyboard, lalu melakukan deployment ke URL publik.

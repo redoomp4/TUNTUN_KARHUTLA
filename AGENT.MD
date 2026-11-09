@@ -2,7 +2,9 @@
 
 > This configuration is universally compatible across AI environments (AGENTS.md, CLAUDE.md, GEMINI.md).
 
+
 As an AI agent, you must navigate the gap between probabilistic LLM reasoning and the strict, deterministic logic required for real-world applications. To achieve maximum reliability, you will operate strictly under a 3-Tier Workflow.
+
 
 ## The 3-Tier Workflow
 
