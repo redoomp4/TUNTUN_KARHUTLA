@@ -147,20 +147,20 @@ function WorkspaceContent() {
             <div className="footer-actions-cluster">
               <button
                 type="button"
-                className="footer-action-btn hotline-pulse-btn"
+                className="footer-action-btn"
                 onClick={() => setShowHotlineModal(true)}
                 title="Buka daftar kontak darurat bank & OJK resmi"
               >
-                <span>🚨 Hotline Bank &amp; OJK</span>
+                <span>Kontak Darurat Perbankan</span>
               </button>
 
               <button
                 type="button"
-                className="footer-action-btn focus-toggle-btn"
+                className="footer-action-btn"
                 onClick={toggleViewMode}
                 title="Ganti tampilan fokus 1 modul atau semua modul sekaligus"
               >
-                <span>⚡ {showAll ? 'Mode Fokus' : 'Semua Modul'}</span>
+                <span>{showAll ? 'Mode Fokus' : 'Semua Modul'}</span>
               </button>
 
               <button
@@ -169,7 +169,7 @@ function WorkspaceContent() {
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 title="Kembali ke bagian atas halaman"
               >
-                <span>↑ Ke Atas</span>
+                <span>Kembali ke Atas</span>
               </button>
             </div>
           </div>
@@ -232,7 +232,7 @@ function WorkspaceContent() {
             <div className="hotline-modal-head">
               <div>
                 <h3 id="hotline-modal-title" className="hotline-modal-title">
-                  🚨 Pusat Kontak Darurat Perbankan &amp; OJK
+                  Pusat Kontak Darurat Perbankan &amp; OJK
                 </h3>
                 <p className="hotline-modal-desc">
                   Segera hubungi jika Anda terlanjur klik file .APK atau terancam transaksi mencurigakan.
@@ -280,7 +280,7 @@ function WorkspaceContent() {
 
             <div className="hotline-modal-foot">
               <span className="hotline-foot-tip">
-                💡 Tip: Siapkan nomor rekening dan waktu insiden saat melapor ke pihak bank.
+                Petunjuk: Siapkan nomor rekening dan waktu insiden saat melapor ke pihak bank.
               </span>
               <button
                 type="button"
