@@ -14,18 +14,44 @@ import {
 } from '../data/officialDomains.js';
 
 /**
- * Normalizes obfuscated scam text (e.g. "'With-draw'" -> "withdraw", "milyarann" -> "milyaran").
+ * Normalizes obfuscated scam text (e.g. "'With-draw'" -> "withdraw", "milyarann" -> "milyaran", "k0de 0tp" -> "kode otp", "d e p o s i t" -> "deposit").
  * @param {string} raw
  * @returns {string}
  */
 export function normalizeObfuscatedText(raw = '') {
-  return raw
+  let s = (raw || '')
     .toLowerCase()
-    .replace(/['"`‘’“”]/g, '')
-    // Join letters separated by single hyphen or dot inside words (e.g. with-draw -> withdraw, o.t.p -> otp)
-    .replace(/([a-z])[-._]+([a-z])/g, '$1$2')
-    // Collapse 2+ repeated trailing characters (e.g. milyarann -> milyaran)
-    .replace(/([a-z])\1{1,}/g, '$1');
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/['"`‘’“”]/g, '');
+
+  // Strip spaces around dots and slashes: e.g. 'pdf . apk' -> 'pdf.apk'
+  s = s.replace(/\s*([./_-])\s*/g, '$1');
+
+  // Decode common leetspeak substitutions
+  s = s.replace(/(?<=[a-z])0(?=[a-z])/g, 'o')
+       .replace(/\b0(?=[a-z])/g, 'o')
+       .replace(/(?<=[a-z])0\b/g, 'o')
+       .replace(/(?<=[a-z])3(?=[a-z])/g, 'e')
+       .replace(/\b3(?=[a-z])/g, 'e')
+       .replace(/(?<=[a-z])1(?=[a-z])/g, 'i')
+       .replace(/\b1(?=[a-z])/g, 'i')
+       .replace(/@/g, 'a')
+       .replace(/(?<=[a-z])4(?=[a-z])/g, 'a')
+       .replace(/(?<=[a-z])5(?=[a-z])/g, 's');
+
+  // Collapse single letters separated by single space: 'd e p o s i t' -> 'deposit', 'o t p' -> 'otp'
+  s = s.replace(/\b([a-z0-9])(?:\s([a-z0-9]))+\b/g, (match) => match.replace(/\s+/g, ''));
+
+  // Join single letters separated by dots: 'b.r.i' -> 'bri', 'o.t.p' -> 'otp'
+  s = s.replace(/\b([a-z])\.([a-z])(?:\.([a-z]))*\b/g, (m) => m.replace(/\./g, ''));
+
+  // Join letters separated by hyphens/underscores: 'with-draw' -> 'withdraw'
+  s = s.replace(/([a-z0-9])[-_]+([a-z0-9])/g, '$1$2');
+
+  // Collapse 3+ repeated characters: 'milyarannnn' -> 'milyaran'
+  s = s.replace(/([a-z])\1{2,}/g, '$1');
+
+  return s;
 }
 
 /**
@@ -70,8 +96,12 @@ export function evaluateMessageHeuristics(rawInput) {
   const isTelcoPromoBroadcast = Boolean(telcoOptOutMatch || hasMyAdsLink);
 
   // R-01: Malicious File Extensions (.apk, .exe) OR Standalone APK Download Links ("APK = https://...", "/APK-1")
-  const apkFileMatch = text.match(/([a-zA-Z0-9_\-.]+\.(?:pdf\.apk|jpg\.apk|png\.apk|doc\.apk|apk|exe|scr|bat|vbs))\b/i);
-  const apkLinkOrMentionMatch = text.match(/\b(?:apk\s*[:=]\s*\S+|(?:unduh|download|instal|pasang|link)\s+apk\b|\S+\/apk[-_0-9a-z]*)/i);
+  const apkFileMatch =
+    text.match(/([a-zA-Z0-9_\-.]+\.(?:pdf\.apk|jpg\.apk|png\.apk|doc\.apk|apk|exe|scr|bat|vbs))\b/i) ||
+    normalized.match(/([a-zA-Z0-9_\-.]+\.(?:pdf\.apk|jpg\.apk|png\.apk|doc\.apk|apk|exe|scr|bat|vbs))\b/i);
+  const apkLinkOrMentionMatch =
+    text.match(/\b(?:apk\s*[:=]\s*\S+|(?:unduh|download|instal|pasang|link)\s+apk\b|\S+\/apk[-_0-9a-z]*)/i) ||
+    normalized.match(/\b(?:apk\s*[:=]\s*\S+|(?:unduh|download|instal|pasang|link)\s+apk\b|\S+\/apk[-_0-9a-z]*)/i);
 
   if (apkFileMatch || apkLinkOrMentionMatch) {
     const snippetStr = apkFileMatch ? apkFileMatch[1] : apkLinkOrMentionMatch[0];
@@ -206,7 +236,9 @@ export function evaluateMessageHeuristics(rawInput) {
   });
 
   // R-02: Credential & OTP Harvesting
-  const credMatch = text.match(/\b(kode\s*otp|otp|pin\s*atm|pin\s*m-?banking|cvv|password|kata\s*sandi|akses\s*sms|izinkan\s*semua)\b/i);
+  const credMatch =
+    text.match(/\b(kode\s*otp|otp|pin\s*atm|pin\s*m-?banking|cvv|password|kata\s*sandi|akses\s*sms|izinkan\s*semua)\b/i) ||
+    normalized.match(/\b(kode\s*otp|otp|pin\s*atm|pin\s*m-?banking|cvv|password|kata\s*sandi|akses\s*sms|izinkan\s*semua)\b/i);
   if (credMatch && !isEducationalWarning) {
     riskScore += 35;
     if (recommendedGuideId === 'guide-sit-1') {
@@ -222,9 +254,13 @@ export function evaluateMessageHeuristics(rawInput) {
   }
 
   // R-05: Psychological Urgency & Threat Manipulation
-  const urgencyMatch = text.match(
-    /\b(dalam\s+\d+\s*(?:menit|jam)|hitungan\s+menit|malam\s+ini|segera\s+batalkan|otomatis\s+terpotong|akun\s+diblokir|paket\s+tertahan|hangus)\b/i
-  );
+  const urgencyMatch =
+    text.match(
+      /\b(dalam\s+\d+\s*(?:menit|jam)|hitungan\s+menit|malam\s+ini|segera\s+batalkan|otomatis\s+terpotong|akun\s+diblokir|paket\s+tertahan|hangus)\b/i
+    ) ||
+    normalized.match(
+      /\b(dalam\s+\d+\s*(?:menit|jam)|hitungan\s+menit|malam\s+ini|segera\s+batalkan|otomatis\s+terpotong|akun\s+diblokir|paket\s+tertahan|hangus)\b/i
+    );
   if (urgencyMatch && !isTelcoPromoBroadcast) {
     riskScore += 20;
     findings.push({
@@ -237,9 +273,13 @@ export function evaluateMessageHeuristics(rawInput) {
   }
 
   // R-03: Advance-Fee / Task Scam Deposit / Tariff Threat
-  const moneyBaitMatch = text.match(
-    /\b(deposit\s+modal|misi\s+vip|komisi\s+rp|tarif\s+transaksi|rp\s*150\.000\s*\/\s*bulan|pajak\s+pemenang|biaya\s+admin|tebusan\s+bea)\b/i
-  );
+  const moneyBaitMatch =
+    text.match(
+      /\b(deposit\s+modal|misi\s+vip|komisi\s+rp|tarif\s+transaksi|rp\s*150\.000\s*\/\s*bulan|pajak\s+pemenang|biaya\s+admin|tebusan\s+bea)\b/i
+    ) ||
+    normalized.match(
+      /\b(deposit\s+modal|misi\s+vip|komisi\s+rp|tarif\s+transaksi|pajak\s+pemenang|biaya\s+admin|tebusan\s+bea|deposit|komisi|top-?up\s+deposit)\b/i
+    );
   if (moneyBaitMatch) {
     riskScore += 35;
     if ( lower.includes('deposit') || lower.includes('komisi') ) {

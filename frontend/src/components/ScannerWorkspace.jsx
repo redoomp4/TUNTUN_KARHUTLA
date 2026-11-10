@@ -60,6 +60,30 @@ export default function ScannerWorkspace({ hidden }) {
     setAiAnalyzing(true);
     const hybridAnalysis = await requestHybridMessageAnalysis(trimmed, evaluated);
     setAiDeepSummary(hybridAnalysis);
+
+    if (hybridAnalysis && typeof hybridAnalysis.correctedScore === 'number' && hybridAnalysis.correctedScore > evaluated.score) {
+      const isDanger = hybridAnalysis.correctedScore >= 60;
+      setScanResult((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          score: hybridAnalysis.correctedScore,
+          verdictLevel: hybridAnalysis.verdictLevel || (isDanger ? 'DANGER' : 'WARN'),
+          verdictBadgeText: isDanger ? 'Risiko tinggi (Kalibrasi AI)' : 'Waspada (Kalibrasi AI)',
+          findings: [
+            ...prev.findings,
+            {
+              id: 'AI-CALIBRATION',
+              severity: isDanger ? 'high' : 'medium',
+              title: 'Kalibrasi AI: Modus Manipulasi Terdeteksi',
+              snippet: hybridAnalysis.detectedModus || 'Pola pesan teracak / manipulasi psikologis non-standar',
+              desc: hybridAnalysis.summaryText
+            }
+          ]
+        };
+      });
+      recordScanToHistory(trimmed, hybridAnalysis.correctedScore);
+    }
     setAiAnalyzing(false);
   };
 

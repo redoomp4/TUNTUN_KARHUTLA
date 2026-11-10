@@ -80,6 +80,17 @@ function WorkspaceContent() {
   const isHidden = (viewKey) => !showAll && activeView !== viewKey;
 
   useEffect(() => {
+    if (showHotlineModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showHotlineModal]);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && showHotlineModal) {
         setShowHotlineModal(false);

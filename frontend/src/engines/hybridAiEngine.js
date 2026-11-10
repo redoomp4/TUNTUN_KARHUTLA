@@ -420,14 +420,56 @@ export function buildDeterministicContextualSummary(rawText = '', heuristicResul
   return 'Aman (Skor 0/100): Tidak ditemukan indikasi bahaya atau berkas berbahaya. Tetap jaga kerahasiaan kata sandi dan PIN Anda.';
 }
 
+function getGeminiApiKey() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+      return import.meta.env.VITE_GEMINI_API_KEY;
+    }
+    if (typeof window !== 'undefined' && window.GEMINI_API_KEY) {
+      return window.GEMINI_API_KEY;
+    }
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('tuntun_gemini_key');
+      if (stored) return stored;
+    }
+  } catch {
+    // Ignore environments where localStorage or import.meta is restricted
+  }
+  return null;
+}
+
+async function callGeminiApi(promptText, signal) {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 350 }
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const candidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Hybrid AI Deep Message Analyzer (AI Second-Opinion + Deterministic Guardrail).
- * Uses free OpenAI-compatible Pollinations endpoint (`https://text.pollinations.ai/openai`)
- * while strictly preserving the deterministic score from heuristicEngine.js (prompt.MD Rule #5).
+ * Uses Google Gemini (when VITE_GEMINI_API_KEY is available) or free OpenAI-compatible
+ * Pollinations endpoint (`https://text.pollinations.ai/openai`), and calibrates score
+ * if heavily obfuscated/scrambled scam patterns were missed by initial regexes.
  *
  * @param {string} rawText
  * @param {object} heuristicResult
- * @returns {Promise<{ summaryText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK', providerName: string }>}
+ * @returns {Promise<{ summaryText: string, correctedScore?: number, verdictLevel?: string, detectedModus?: string, source: string, providerName: string }>}
  */
 export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
   const localSummary = buildDeterministicContextualSummary(rawText, heuristicResult);
@@ -437,46 +479,114 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
 
   try {
     const isPromo = Boolean(heuristicResult?.isTelcoPromoBroadcast);
     const systemPrompt = [
       'Anda adalah Asisten Analis Keamanan Siber TUNTUN.',
-      `Konteks: ${isPromo ? 'Pesan teridentifikasi sebagai broadcast iklan promosi operator.' : `Skor risiko: ${heuristicResult?.score ?? 0}/100.`}`,
-      'Berikan kesimpulan verifikasi dalam MAKSIMAL 2 kalimat Bahasa Indonesia yang sangat jelas, ramah, dan mudah dipahami remaja hingga lansia.',
-      'Sebutkan dengan tegas: Apakah pesan ini aman/resmi atau penipuan, dan tindakan apa yang sebaiknya diambil penerima.'
-    ].join(' ');
+      `Konteks heuristik awal: ${isPromo ? 'Broadcast iklan operator resmi.' : `Skor risiko awal: ${heuristicResult?.score ?? 0}/100.`}`,
+      'Tugas: Evaluasi pesan pengguna secara objektif, termasuk jika teks sengaja diacak, huruf diselingi spasi (misal d e p o s i t), memakai angka pengganti huruf (k0de 0tp, tr4nsfer), atau tautan mencurigakan.',
+      'Format balasan yang WAJIB digunakan:',
+      'STATUS: [PENIPUAN atau AMAN]',
+      'SKOR: [angka 0-100]',
+      'RINGKASAN: [Maksimal 2 kalimat Bahasa Indonesia yang sangat jelas dan ramah]',
+      'MODUS: [Nama jenis penipuan jika berbahaya, atau "Pesan Normal" jika aman]'
+    ].join('\n');
 
-    const response = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: 'openai-fast',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Evaluasi pesan ini secara objektif:\n"${rawText}"` }
-        ]
-      })
-    });
+    let rawBody = '';
+    let providerName = 'AI Cloud Online';
+    let source = 'AI_HYBRID';
+
+    // 1. Try Gemini API first if key configured
+    const geminiText = await callGeminiApi(`${systemPrompt}\n\nEvaluasi pesan ini:\n"${rawText}"`, controller.signal);
+    if (geminiText) {
+      rawBody = geminiText;
+      providerName = 'Google Gemini 1.5 Flash (Aktif)';
+      source = 'AI_GEMINI';
+    } else {
+      // 2. Fall back to free OpenAI-compatible Pollinations endpoint
+      const response = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'openai-fast',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Evaluasi pesan ini secara objektif:\n"${rawText}"` }
+          ]
+        })
+      });
+
+      if (response.ok) {
+        rawBody = await response.text();
+        providerName = 'AI Cloud Gratis (Online)';
+        source = 'AI_HYBRID';
+      }
+    }
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
+    const cleaned = parseAiResponseText(rawBody);
+    if (!cleaned || cleaned.length < 10) {
       return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal Cepat' };
     }
 
-    const rawBody = await response.text();
-    const cleaned = parseAiResponseText(rawBody);
-    if (!cleaned || cleaned.length < 15 || cleaned.length > 520) {
-      return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal Cepat' };
+    // Parse structured analysis fields
+    let summaryText = cleaned;
+    let correctedScore = undefined;
+    let verdictLevel = undefined;
+    let detectedModus = '';
+
+    const statusMatch = cleaned.match(/STATUS\s*:\s*(PENIPUAN|BAHAYA|WASPADA|AMAN|RESMI)/i);
+    const scoreMatch = cleaned.match(/SKOR\s*:\s*(\d{1,3})/i);
+    const summaryMatch = cleaned.match(/RINGKASAN\s*:\s*([^\n]+(?:\n[^\n]+)?)/i);
+    const modusMatch = cleaned.match(/MODUS\s*:\s*([^\n]+)/i);
+
+    if (summaryMatch) {
+      summaryText = summaryMatch[1].replace(/^(RINGKASAN\s*:\s*)/i, '').trim();
+    }
+    if (modusMatch) {
+      detectedModus = modusMatch[1].replace(/^(MODUS\s*:\s*)/i, '').trim();
+    }
+
+    if (scoreMatch) {
+      const parsed = Math.min(100, Math.max(0, parseInt(scoreMatch[1], 10)));
+      if (parsed >= 60 && (heuristicResult?.score ?? 0) < 60) {
+        correctedScore = parsed;
+        verdictLevel = 'DANGER';
+      } else if (parsed >= 25 && (heuristicResult?.score ?? 0) < 25) {
+        correctedScore = parsed;
+        verdictLevel = 'WARN';
+      }
+    } else if (statusMatch) {
+      const st = statusMatch[1].toUpperCase();
+      if ((st === 'PENIPUAN' || st === 'BAHAYA') && (heuristicResult?.score ?? 0) < 60) {
+        correctedScore = 80;
+        verdictLevel = 'DANGER';
+      } else if (st === 'WASPADA' && (heuristicResult?.score ?? 0) < 25) {
+        correctedScore = 50;
+        verdictLevel = 'WARN';
+      }
+    } else {
+      // Natural language fallback detection if model replied without tags
+      const isScam = /\b(penipuan|berbahaya|phishing|malware|jebakan|scam|jangan transfer|jangan unduh|jangan instal|modus)\b/i.test(cleaned);
+      const isSafe = /\b(aman|bukan penipuan|resmi operator|himbauan resmi)\b/i.test(cleaned);
+      if (isScam && !isSafe && (heuristicResult?.score ?? 0) < 60) {
+        correctedScore = 80;
+        verdictLevel = 'DANGER';
+        detectedModus = 'Modus Penipuan Terdeteksi oleh Analisis AI';
+      }
     }
 
     return {
-      summaryText: cleaned,
-      source: 'AI_HYBRID',
-      providerName: 'AI Cloud Gratis (Online)'
+      summaryText,
+      correctedScore,
+      verdictLevel,
+      detectedModus,
+      source,
+      providerName
     };
   } catch {
     clearTimeout(timeoutId);

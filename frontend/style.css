@@ -1982,37 +1982,46 @@ textarea:focus-visible,
 .hotline-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 999;
-  background-color: rgba(15, 23, 42, 0.75);
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.78);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
   animation: fadeInModal 180ms ease-out;
 }
 
 .hotline-modal-card {
   width: 100%;
   max-width: 620px;
+  max-height: min(90vh, 90dvh);
   background: #181d26;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
-  padding: 24px 26px;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   color: #f1f5f9;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hotline-modal-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 14px;
+  padding-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background: #181d26;
+  z-index: 2;
 }
 
 .hotline-modal-title {
@@ -2030,19 +2039,29 @@ textarea:focus-visible,
 }
 
 .hotline-modal-close {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 18px;
+  font-weight: 700;
+  color: #cbd5e1;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
   transition: all 140ms ease;
+  touch-action: manipulation;
 }
 
-.hotline-modal-close:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.hotline-modal-close:hover,
+.hotline-modal-close:active {
+  background-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .hotline-modal-grid {
@@ -2165,8 +2184,22 @@ textarea:focus-visible,
     flex-direction: column;
     align-items: flex-start;
   }
+  .hotline-modal-backdrop {
+    padding: 10px;
+    align-items: flex-end;
+  }
+  .hotline-modal-card {
+    max-height: 86dvh;
+    border-radius: 16px 16px 8px 8px;
+    padding: 16px;
+    gap: 12px;
+  }
   .hotline-modal-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .hotline-card-item {
+    padding: 10px 12px;
   }
 }
 

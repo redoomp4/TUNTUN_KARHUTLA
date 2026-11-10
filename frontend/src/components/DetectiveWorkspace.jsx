@@ -65,7 +65,7 @@ export default function DetectiveWorkspace({ hidden }) {
               Temukan <span className="kw-danger">{targetRiskCount} Ciri Penipuan</span> di Dalam Pesan
             </h2>
             <p className="section-description">
-              Klik dan tandai <strong>potongan kalimat mencurigakan</strong> atau <strong>domain palsu</strong>. Hati-hati, jangan menuduh <strong>elemen pesan yang normal</strong>.
+              Tandai bagian mencurigakan pada pesan di bawah untuk menguji ketelitian Anda membedakan modus manipulasi dari elemen normal.
             </p>
           </div>
 
@@ -179,9 +179,9 @@ export default function DetectiveWorkspace({ hidden }) {
 
           {/* Right Card: Concise Accuracy & Findings */}
           <div className="detective-result-card">
-            <h3 className="panel-heading">Hasil Analisis Anda</h3>
+            <h3 className="panel-heading">Hasil Analisis Forensik</h3>
             <p className="panel-subtext">
-              Periksa kombinasi <strong>domain pengirim</strong>, <strong>permintaan uang</strong>, dan <strong>tautan</strong>.
+              Evaluasi domain, kontak pengirim, dan manipulasi kepanikan waktu.
             </p>
 
             <div className="ruled-metrics-list">

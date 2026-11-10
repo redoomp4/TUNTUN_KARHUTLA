@@ -164,10 +164,7 @@ export default function SimulatorWorkspace({ hidden }) {
               Latihan Menghadapi <span className="kw-on-dark">Chat Penipu</span>
             </h2>
             <p className="section-description on-field-secondary">
-              Uji cara Anda menolak <strong className="kw-on-dark">file .APK berbahaya</strong>, jebakan{' '}
-              <strong className="kw-on-dark">kode OTP</strong>, dan tawaran{' '}
-              <strong className="kw-on-dark">deposit komisi palsu</strong>. Anda bebas memilih tombol{' '}
-              <strong>Pilihan Cepat</strong> atau <strong>mengetik balasan manual</strong> ke AI.
+              Uji respons Anda menolak manipulasi kurir APK, pembajakan akun, dan phishing OTP. Pilih respons cepat atau ketik balasan langsung ke AI.
             </p>
           </div>
 
@@ -330,7 +327,7 @@ export default function SimulatorWorkspace({ hidden }) {
               {!selectedChoice && (
                 <>
                   <span className="actions-prompt" id="sim-actions-title">
-                    <strong>Opsi 1:</strong> Klik pilihan tindakan cepat di bawah ini:
+                    Pilihan Respons Tindakan:
                   </span>
                   <div className="sim-choices-grid" id="sim-choices-container">
                     {currentStep.choices.map((choice, idx) => (
@@ -351,7 +348,7 @@ export default function SimulatorWorkspace({ hidden }) {
               <div className="sim-manual-composer">
                 <div className="sim-manual-composer-head">
                   <span className="actions-prompt" style={{ marginBottom: 0 }}>
-                    <strong>Opsi 2:</strong> Atau ketik sendiri balasan Anda ke <strong>AI Penipu</strong>:
+                    Ketik Balasan Manual ke AI:
                   </span>
                   <div className="sim-quick-manual-pills">
                     <button
