@@ -28,7 +28,7 @@ export default function SimulatorWorkspace({ hidden }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [manualTurn, setManualTurn] = useState(0);
   const [manualEval, setManualEval] = useState(null);
-  const [aiSourceLabel, setAiSourceLabel] = useState('AI Gratis Siap');
+  const [aiSourceLabel, setAiSourceLabel] = useState('TUNTUN Neural Active');
 
   const chatScrollRef = useRef(null);
   const currentStep = scenario.steps[stepIndex] || scenario.steps[0];
@@ -129,10 +129,10 @@ export default function SimulatorWorkspace({ hidden }) {
       {
         sender: 'scammer',
         text: aiReply.replyText,
-        meta: aiReply.source === 'AI_HYBRID' ? 'Balasan AI Gratis' : 'Balasan Simulasi Pintar'
+        meta: aiReply.source.startsWith('AI') ? 'Balasan AI Analis' : 'Balasan Simulasi Kontekstual'
       }
     ]);
-    setAiSourceLabel(aiReply.source === 'AI_HYBRID' ? 'AI Cloud Gratis Aktif' : 'AI Kontekstual Aktif');
+    setAiSourceLabel(aiReply.providerName || (aiReply.source.startsWith('AI') ? 'TUNTUN Neural Core' : 'Mesin Simulasi Lokal'));
     setManualTurn((prev) => prev + 1);
     setAiLoading(false);
   };

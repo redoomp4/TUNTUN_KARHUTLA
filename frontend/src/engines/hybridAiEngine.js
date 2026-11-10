@@ -245,93 +245,6 @@ function parseAiResponseText(rawBody) {
   return trimmed;
 }
 
-/**
- * Generates dynamic scammer dialogue using Free Hybrid AI (`https://text.pollinations.ai/openai`)
- * with conversation history and automatic contextual fallback (satisfies NFR-09).
- *
- * @param {string} personaKey
- * @param {number} turnIndex
- * @param {string} userMessage
- * @param {{ forceOffline?: boolean, history?: Array<{sender: string, text: string}> }} [options]
- * @returns {Promise<{ replyText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK', providerName?: string }>}
- */
-export async function requestHybridScammerReply(personaKey, turnIndex, userMessage, options = {}) {
-  const resolvedKey = PERSONA_ALIAS_MAP[personaKey] || personaKey || 'hackedFriend';
-  const persona = SPARRING_PERSONAS[resolvedKey] || SPARRING_PERSONAS.hackedFriend;
-  const smartFallback = buildSmartContextualScammerReply(resolvedKey, turnIndex, userMessage);
-
-  if (options.forceOffline) {
-    return {
-      replyText: smartFallback,
-      source: 'LOCAL_FALLBACK',
-      providerName: 'Mesin Kontekstual Lokal (NFR-09)'
-    };
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8500);
-
-  try {
-    const systemPrompt = [
-      `Kamu sedang berperan sebagai lawan latihan (roleplay) bernama "${persona.contactName}" dalam simulator edukasi keamanan siber TUNTUN.`,
-      `Skenario: ${persona.label}. Pesan pembuka kamu tadi: "${persona.openingMessage}".`,
-      `Aturan: Balas langsung kalimat pengguna berikut dalam 1-2 kalimat bahasa Indonesia yang natural dan mendesak sesuai peranmu (misalnya beralasan kamera rusak jika diminta video call, atau mendesak waktu habis).`,
-      `Jangan gunakan emoji, jangan kirim link aktif berbahaya, dan jangan keluar dari karakter.`
-    ].join(' ');
-
-    const historyMessages = (options.history || []).slice(-4).map((m) => ({
-      role: m.sender === 'user' ? 'user' : 'assistant',
-      content: m.text
-    }));
-
-    const response = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: 'openai-fast',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...historyMessages,
-          { role: 'user', content: userMessage }
-        ]
-      })
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      return {
-        replyText: smartFallback,
-        source: 'LOCAL_FALLBACK',
-        providerName: 'Mesin Kontekstual Lokal (NFR-09)'
-      };
-    }
-
-    const rawBody = await response.text();
-    const cleaned = parseAiResponseText(rawBody);
-    if (!cleaned || cleaned.length < 8 || cleaned.length > 550) {
-      return {
-        replyText: smartFallback,
-        source: 'LOCAL_FALLBACK',
-        providerName: 'Mesin Kontekstual Lokal (NFR-09)'
-      };
-    }
-
-    return {
-      replyText: cleaned,
-      source: 'AI_HYBRID',
-      providerName: 'Pollinations OpenAI Gratis (Aktif)'
-    };
-  } catch {
-    clearTimeout(timeoutId);
-    return {
-      replyText: smartFallback,
-      source: 'LOCAL_FALLBACK',
-      providerName: 'Mesin Kontekstual Lokal (NFR-09)'
-    };
-  }
-}
 
 /**
  * Generates 3 practical, copy-ready verification replies based on the detected scam type
@@ -420,7 +333,7 @@ export function buildDeterministicContextualSummary(rawText = '', heuristicResul
   return 'Aman (Skor 0/100): Tidak ditemukan indikasi bahaya atau berkas berbahaya. Tetap jaga kerahasiaan kata sandi dan PIN Anda.';
 }
 
-function getGeminiApiKey() {
+export function getGeminiApiKey() {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
       return import.meta.env.VITE_GEMINI_API_KEY;
@@ -438,34 +351,224 @@ function getGeminiApiKey() {
   return null;
 }
 
-async function callGeminiApi(promptText, signal) {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
+export function setGeminiApiKey(key = '') {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, {
+    if (typeof localStorage !== 'undefined') {
+      if (key && key.trim()) {
+        localStorage.setItem('tuntun_gemini_key', key.trim());
+      } else {
+        localStorage.removeItem('tuntun_gemini_key');
+      }
+    }
+  } catch {}
+}
+
+export function getGroqApiKey() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GROQ_API_KEY) {
+      return import.meta.env.VITE_GROQ_API_KEY;
+    }
+    if (typeof window !== 'undefined' && window.GROQ_API_KEY) {
+      return window.GROQ_API_KEY;
+    }
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('tuntun_groq_key');
+      if (stored) return stored;
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Unified Multi-Tier Free LLM API Connector.
+ * Priority Pipeline:
+ * 1. Google Gemini 1.5/2.0 Flash (Free Tier via Google AI Studio API key)
+ * 2. Groq Cloud (Free Tier Llama 3.3 / Mixtral API key)
+ * 3. TUNTUN Cloud Neural LLM Gateway (Zero-key, 100% free OpenAI-compatible proxy)
+ *
+ * @param {{ systemPrompt?: string, messages?: Array<{role: string, content: string}>, signal?: AbortSignal, maxTokens?: number }} params
+ * @returns {Promise<{ text: string, provider: string, tier: string }|null>}
+ */
+export async function executeFreeLlmChat({ systemPrompt = '', messages = [], signal, maxTokens = 350 }) {
+  // 1. Google Gemini Free Tier
+  const geminiKey = getGeminiApiKey();
+  if (geminiKey) {
+    try {
+      const combinedPrompt = [
+        systemPrompt ? `[INSTRUKSI SISTEM]\n${systemPrompt}\n` : '',
+        ...messages.map((m) => `${m.role === 'user' ? 'PENGGUNA' : 'ASISTEN'}: ${m.content}`)
+      ].join('\n\n');
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
+      const gemRes = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal,
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: combinedPrompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
+        })
+      });
+      if (gemRes.ok) {
+        const gemData = await gemRes.json();
+        const candidate = gemData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return {
+            text: candidate.trim(),
+            provider: 'TUNTUN Neural Core (Gemini Flash)',
+            tier: 'GEMINI'
+          };
+        }
+      }
+    } catch {
+      // Fall through to next tier
+    }
+  }
+
+  // 2. Groq Cloud Free Tier
+  const groqKey = getGroqApiKey();
+  if (groqKey) {
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${groqKey}`
+        },
+        signal,
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+            ...messages
+          ],
+          temperature: 0.2,
+          max_tokens: maxTokens
+        })
+      });
+      if (groqRes.ok) {
+        const groqData = await groqRes.json();
+        const content = groqData?.choices?.[0]?.message?.content;
+        if (typeof content === 'string' && content.trim()) {
+          return {
+            text: content.trim(),
+            provider: 'TUNTUN Neural Core (Llama 3.3)',
+            tier: 'GROQ'
+          };
+        }
+      }
+    } catch {
+      // Fall through to next tier
+    }
+  }
+
+  // 3. TUNTUN Cloud Neural LLM Gateway (Zero-key, 100% free)
+  try {
+    const gatewayRes = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal,
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 350 }
+        model: 'openai-fast',
+        messages: [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          ...messages
+        ]
       })
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const candidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+    if (gatewayRes.ok) {
+      const rawText = await gatewayRes.text();
+      const cleaned = parseAiResponseText(rawText);
+      if (cleaned && cleaned.length >= 8) {
+        return {
+          text: cleaned,
+          provider: 'TUNTUN Neural Engine (Aktif)',
+          tier: 'GATEWAY'
+        };
+      }
+    }
   } catch {
-    return null;
+    // Return null to trigger deterministic fallback
+  }
+
+  return null;
+}
+
+/**
+ * Generates dynamic scammer dialogue using connected Free LLM APIs
+ * with conversation history and automatic contextual fallback (satisfies NFR-09).
+ *
+ * @param {string} personaKey
+ * @param {number} turnIndex
+ * @param {string} userMessage
+ * @param {{ forceOffline?: boolean, history?: Array<{sender: string, text: string}> }} [options]
+ * @returns {Promise<{ replyText: string, source: string, providerName?: string }>}
+ */
+export async function requestHybridScammerReply(personaKey, turnIndex, userMessage, options = {}) {
+  const resolvedKey = PERSONA_ALIAS_MAP[personaKey] || personaKey || 'hackedFriend';
+  const persona = SPARRING_PERSONAS[resolvedKey] || SPARRING_PERSONAS.hackedFriend;
+  const smartFallback = buildSmartContextualScammerReply(resolvedKey, turnIndex, userMessage);
+
+  if (options.forceOffline) {
+    return {
+      replyText: smartFallback,
+      source: 'LOCAL_FALLBACK',
+      providerName: 'TUNTUN Heuristic Core (Lokal)'
+    };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8500);
+
+  try {
+    const systemPrompt = [
+      `Kamu sedang berperan sebagai lawan latihan (roleplay) bernama "${persona.contactName}" dalam simulator edukasi keamanan siber TUNTUN.`,
+      `Skenario: ${persona.label}. Pesan pembuka kamu tadi: "${persona.openingMessage}".`,
+      `Aturan: Balas langsung kalimat pengguna berikut dalam 1-2 kalimat bahasa Indonesia yang natural dan mendesak sesuai peranmu (misalnya beralasan kamera rusak jika diminta video call, atau mendesak waktu habis).`,
+      `Jangan gunakan emoji, jangan kirim link aktif berbahaya, dan jangan keluar dari karakter.`
+    ].join(' ');
+
+    const historyMessages = (options.history || []).slice(-4).map((m) => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text
+    }));
+
+    const result = await executeFreeLlmChat({
+      systemPrompt,
+      messages: [...historyMessages, { role: 'user', content: userMessage }],
+      signal: controller.signal,
+      maxTokens: 250
+    });
+
+    clearTimeout(timeoutId);
+
+    if (result && result.text && result.text.length >= 8) {
+      return {
+        replyText: result.text,
+        source: 'AI_HYBRID',
+        providerName: result.provider
+      };
+    }
+
+    return {
+      replyText: smartFallback,
+      source: 'LOCAL_FALLBACK',
+      providerName: 'TUNTUN Heuristic Core (Lokal)'
+    };
+  } catch {
+    clearTimeout(timeoutId);
+    return {
+      replyText: smartFallback,
+      source: 'LOCAL_FALLBACK',
+      providerName: 'TUNTUN Heuristic Core (Lokal)'
+    };
   }
 }
 
 /**
  * Hybrid AI Deep Message Analyzer (AI Second-Opinion + Deterministic Guardrail).
- * Uses Google Gemini (when VITE_GEMINI_API_KEY is available) or free OpenAI-compatible
- * Pollinations endpoint (`https://text.pollinations.ai/openai`), and calibrates score
- * if heavily obfuscated/scrambled scam patterns were missed by initial regexes.
+ * Uses connected Free LLM APIs (Gemini Flash, Groq, or Cloud Neural LLM Gateway),
+ * and calibrates score if heavily obfuscated/scrambled scam patterns were missed by initial regexes.
  *
  * @param {string} rawText
  * @param {object} heuristicResult
@@ -475,11 +578,11 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
   const localSummary = buildDeterministicContextualSummary(rawText, heuristicResult);
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal (Offline)' };
+    return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'TUNTUN Heuristic Core (Lokal)' };
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  const timeoutId = setTimeout(() => controller.abort(), 7500);
 
   try {
     const isPromo = Boolean(heuristicResult?.isTelcoPromoBroadcast);
@@ -494,46 +597,20 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
       'MODUS: [Nama jenis penipuan jika berbahaya, atau "Pesan Normal" jika aman]'
     ].join('\n');
 
-    let rawBody = '';
-    let providerName = 'AI Cloud Online';
-    let source = 'AI_HYBRID';
-
-    // 1. Try Gemini API first if key configured
-    const geminiText = await callGeminiApi(`${systemPrompt}\n\nEvaluasi pesan ini:\n"${rawText}"`, controller.signal);
-    if (geminiText) {
-      rawBody = geminiText;
-      providerName = 'Google Gemini 1.5 Flash (Aktif)';
-      source = 'AI_GEMINI';
-    } else {
-      // 2. Fall back to free OpenAI-compatible Pollinations endpoint
-      const response = await fetch('https://text.pollinations.ai/openai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: 'openai-fast',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Evaluasi pesan ini secara objektif:\n"${rawText}"` }
-          ]
-        })
-      });
-
-      if (response.ok) {
-        rawBody = await response.text();
-        providerName = 'AI Cloud Gratis (Online)';
-        source = 'AI_HYBRID';
-      }
-    }
+    const result = await executeFreeLlmChat({
+      systemPrompt,
+      messages: [{ role: 'user', content: `Evaluasi pesan ini secara objektif:\n"${rawText}"` }],
+      signal: controller.signal,
+      maxTokens: 300
+    });
 
     clearTimeout(timeoutId);
 
-    const cleaned = parseAiResponseText(rawBody);
-    if (!cleaned || cleaned.length < 10) {
-      return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal Cepat' };
+    if (!result || !result.text || result.text.length < 10) {
+      return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'TUNTUN Heuristic Core (Lokal)' };
     }
 
-    // Parse structured analysis fields
+    const cleaned = result.text;
     let summaryText = cleaned;
     let correctedScore = undefined;
     let verdictLevel = undefined;
@@ -570,7 +647,6 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
         verdictLevel = 'WARN';
       }
     } else {
-      // Natural language fallback detection if model replied without tags
       const isScam = /\b(penipuan|berbahaya|phishing|malware|jebakan|scam|jangan transfer|jangan unduh|jangan instal|modus)\b/i.test(cleaned);
       const isSafe = /\b(aman|bukan penipuan|resmi operator|himbauan resmi)\b/i.test(cleaned);
       if (isScam && !isSafe && (heuristicResult?.score ?? 0) < 60) {
@@ -585,28 +661,28 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
       correctedScore,
       verdictLevel,
       detectedModus,
-      source,
-      providerName
+      source: result.tier === 'GEMINI' ? 'AI_GEMINI' : 'AI_HYBRID',
+      providerName: result.provider
     };
   } catch {
     clearTimeout(timeoutId);
     return {
       summaryText: localSummary,
       source: 'LOCAL_FALLBACK',
-      providerName: 'Analisis Lokal Cepat'
+      providerName: 'TUNTUN Heuristic Core (Lokal)'
     };
   }
 }
 
 /**
- * Free Interactive AI Chatbot Consultation for Scanner / Simulator.
- * Allows users to ask any question to the free AI about the scanned message.
+ * Interactive AI Chatbot Consultation for Scanner / Simulator.
+ * Allows users to ask any question to the connected LLM about the scanned message.
  *
  * @param {string} userQuestion
  * @param {string} contextMessage
  * @returns {Promise<string>}
  */
-export async function askAiChatbotFree(userQuestion, contextMessage = '') {
+export async function askAiAssistant(userQuestion, contextMessage = '') {
   const fallback = 'Pihak resmi tidak pernah meminta kode OTP, PIN, atau mengunduh berkas .APK melalui chat. Selalu hubungi Call Center resmi jika Anda ragu.';
 
   if (!userQuestion || !userQuestion.trim()) return fallback;
@@ -616,36 +692,29 @@ export async function askAiChatbotFree(userQuestion, contextMessage = '') {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  const timeoutId = setTimeout(() => controller.abort(), 7500);
 
   try {
-    const response = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const systemPrompt =
+      'Anda adalah Asisten Keamanan TUNTUN. Jawab pertanyaan pengguna dengan ramah, lugas, dan praktis dalam maksimal 2 kalimat Bahasa Indonesia agar mudah dipahami dari remaja hingga lansia. Konteks pesan yang diperiksa: "' +
+      (contextMessage || '').slice(0, 200) +
+      '"';
+
+    const result = await executeFreeLlmChat({
+      systemPrompt,
+      messages: [{ role: 'user', content: userQuestion.trim() }],
       signal: controller.signal,
-      body: JSON.stringify({
-        model: 'openai-fast',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Anda adalah Asisten Keamanan TUNTUN. Jawab pertanyaan pengguna dengan ramah, lugas, dan praktis dalam maksimal 2 kalimat Bahasa Indonesia agar mudah dipahami dari remaja hingga lansia. Konteks pesan yang diperiksa: "' +
-              (contextMessage || '').slice(0, 200) +
-              '"'
-          },
-          { role: 'user', content: userQuestion.trim() }
-        ]
-      })
+      maxTokens: 250
     });
 
     clearTimeout(timeoutId);
-    if (!response.ok) return fallback;
-
-    const rawBody = await response.text();
-    const cleaned = parseAiResponseText(rawBody);
-    return cleaned && cleaned.length >= 10 ? cleaned : fallback;
+    if (!result || !result.text) return fallback;
+    return result.text.length >= 10 ? result.text : fallback;
   } catch {
     clearTimeout(timeoutId);
     return fallback;
   }
 }
+
+// Preserve backward-compatible alias
+export const askAiChatbotFree = askAiAssistant;

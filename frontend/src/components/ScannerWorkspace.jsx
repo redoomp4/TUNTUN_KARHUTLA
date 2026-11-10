@@ -422,18 +422,18 @@ export default function ScannerWorkspace({ hidden }) {
                 {aiDeepSummary && (
                   <div className="compact-ai-note">
                     <div className="ai-note-head">
-                      <span className="ai-status-pill">{aiAnalyzing ? 'Memproses AI...' : (aiDeepSummary.providerName || 'AI Cloud Gratis')}</span>
+                      <span className="ai-status-pill">{aiAnalyzing ? 'Menganalisis...' : (aiDeepSummary.providerName || 'TUNTUN Neural Core')}</span>
                       <strong>Analisis AI Pendeteksi:</strong>
                     </div>
                     <p className="ai-note-text">{aiDeepSummary.summaryText}</p>
                   </div>
                 )}
 
-                {/* Free Interactive AI Chatbot Consultation Widget */}
+                {/* Interactive AI Chatbot Consultation Widget */}
                 {scanResult && (
                   <div className="scanner-ai-interactive-card">
                     <div className="scanner-ai-card-head">
-                      <span>Konsultasi AI (Bebas Biaya):</span>
+                      <span>Tanya Analis AI:</span>
                       {aiAsking && <span className="ai-pulse-tag">Menjawab...</span>}
                     </div>
                     <div className="scanner-ai-quick-pills">
