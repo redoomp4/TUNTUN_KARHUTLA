@@ -6,109 +6,109 @@
 export const ACTION_GUIDE_SITUATIONS = [
   {
     id: 'guide-sit-1',
-    title: '1. Baru menerima pesan, tautan, atau file mencurigakan',
-    lead: 'Jangan membalas pesan, jangan mengeklik tautan, dan jangan membuka lampiran file berakhiran .apk.',
+    title: '1. Menerima Pesan / Tautan Mencurigakan',
+    lead: 'Jangan balas pesan, jangan klik tautan, dan jangan buka berkas .apk.',
     steps: [
       {
         id: 's1-1',
         bold: 'Hentikan interaksi:',
-        text: 'Abaikan batas waktu atau gertakan pengirim. Blokir nomor di WhatsApp atau SMS.'
+        text: 'Abaikan batas waktu pengirim dan langsung blokir nomornya.'
       },
       {
         id: 's1-2',
-        bold: 'Verifikasi mandiri:',
-        text: 'Hubungi instansi terkait hanya melalui aplikasi resmi atau nomor Call Center resmi.'
+        bold: 'Verifikasi resmi:',
+        text: 'Cek langsung lewat aplikasi resmi bank atau Call Center resmi.'
       },
       {
         id: 's1-3',
-        bold: 'Periksa rekening atau nomor:',
-        text: 'Cek riwayat pelaporan nomor pelaku melalui situs resmi cekrekening.id.'
+        bold: 'Cek rekening/nomor:',
+        text: 'Periksa riwayat aduan nomor pelaku di portal cekrekening.id.'
       },
       {
         id: 's1-4',
-        bold: 'Hapus file mencurigakan:',
-        text: 'Jika file .apk terunduh otomatis, hapus dari folder Unduhan tanpa membukanya.'
+        bold: 'Hapus file unduhan:',
+        text: 'Hapus berkas .apk dari folder Unduhan tanpa membukanya.'
       }
     ]
   },
   {
     id: 'guide-sit-2',
-    title: '2. Sudah terlanjur mengeklik tautan atau menginstal file .APK',
-    lead: 'Putuskan koneksi internet segera agar aplikasi berbahaya tidak dapat meneruskan SMS OTP ke server pelaku.',
+    title: '2. Terlanjur Klik Tautan atau Unduh File .APK',
+    lead: 'Putuskan internet seketika agar malware tidak dapat menyadap SMS OTP.',
     steps: [
       {
         id: 's2-1',
-        bold: 'Aktifkan mode pesawat:',
-        text: 'Matikan Wi-Fi dan data seluler seketika untuk memutus koneksi aplikasi penyadap.'
+        bold: 'Nyalakan mode pesawat:',
+        text: 'Matikan Wi-Fi dan data seluler untuk memutus transmisi data penyadap.'
       },
       {
         id: 's2-2',
         bold: 'Hapus aplikasi asing:',
-        text: 'Buka Pengaturan > Aplikasi, lalu copot aplikasi mencurigakan yang baru terpasang.'
+        text: 'Buka Pengaturan > Aplikasi, lalu copot aplikasi yang baru dipasang.'
       },
       {
         id: 's2-3',
-        bold: 'Cabut izin akses SMS dan aksesibilitas:',
-        text: 'Pastikan tidak ada aplikasi tak dikenal yang memiliki izin membaca SMS.'
+        bold: 'Cabut izin SMS:',
+        text: 'Pastikan tidak ada aplikasi asing memiliki izin membaca SMS/Notifikasi.'
       },
       {
         id: 's2-4',
-        bold: 'Ganti kata sandi dari perangkat lain:',
-        text: 'Gunakan perangkat berbeda yang bersih untuk mengganti kata sandi email dan bank.'
+        bold: 'Ganti password:',
+        text: 'Gunakan HP lain yang bersih untuk mengganti kata sandi m-banking.'
       }
     ]
   },
   {
     id: 'guide-sit-3',
-    title: '3. Sudah terlanjur memberikan kode OTP, PIN, atau kata sandi',
-    lead: 'Anda berpacu dengan waktu. Segera bekukan akses rekening sebelum saldo dipindahkan oleh pelaku.',
+    title: '3. Terlanjur Memberikan Kode OTP atau PIN',
+    lead: 'Segera bekukan akses rekening sebelum saldo dipindahkan oleh pelaku.',
     steps: [
       {
         id: 's3-1',
-        bold: 'Blokir kartu dan akun di aplikasi:',
-        text: 'Gunakan fitur blokir darurat pada aplikasi mobile banking atau e-wallet Anda.'
+        bold: 'Blokir akun di aplikasi:',
+        text: 'Gunakan fitur blokir kartu darurat pada menu mobile banking Anda.'
       },
       {
         id: 's3-2',
-        bold: 'Hubungi Call Center resmi bank:',
-        text: 'Minta petugas memblokir sementara seluruh transaksi keluar dan mencabut sesi perangkat asing.'
+        bold: 'Telepon Call Center Bank:',
+        text: 'Minta petugas membekukan transaksi keluar dan mencabut sesi asing.'
       },
       {
         id: 's3-3',
-        bold: 'Ubah PIN dan kata sandi:',
-        text: 'Segera perbarui kredensial dan jangan gunakan kombinasi yang sama.'
+        bold: 'Ubah PIN & kata sandi:',
+        text: 'Segera perbarui PIN ATM dan kata sandi menggunakan kombinasi baru.'
       },
       {
         id: 's3-4',
-        bold: 'Periksa mutasi transaksi:',
-        text: 'Catat dan simpan bukti tangkapan layar jika terdapat transaksi tidak sah.'
+        bold: 'Periksa mutasi rekening:',
+        text: 'Ambil tangkapan layar jika terdapat mutasi saldo yang tidak wajar.'
       }
     ]
   },
   {
     id: 'guide-sit-4',
-    title: '4. Sudah terlanjur mentransfer uang ke rekening pelaku',
-    lead: 'Jangan pernah mentransfer uang tambahan dengan alasan biaya pencairan atau pajak.',
+    title: '4. Terlanjur Mentransfer Uang ke Pelaku',
+    lead: 'Jangan transfer biaya tambahan apa pun dengan dalih pencairan komisi.',
     steps: [
       {
         id: 's4-1',
-        bold: 'Lapor ke bank pengirim dan bank penerima:',
-        text: 'Minta pemblokiran darurat atas rekening tujuan penipuan.'
+        bold: 'Lapor bank darurat:',
+        text: 'Minta pemblokiran darurat rekening tujuan penipuan ke bank pengirim & penerima.'
       },
       {
         id: 's4-2',
-        bold: 'Kumpulkan bukti lengkap:',
-        text: 'Simpan bukti transfer, nomor rekening pelaku, nomor telepon, dan riwayat percakapan.'
+        bold: 'Amankan bukti transfer:',
+        text: 'Simpan struk transfer, nomor rekening pelaku, dan tangkapan layar chat.'
       },
       {
         id: 's4-3',
-        bold: 'Laporkan ke OJK Anti-Scam Centre (157):',
-        text: 'Daftarkan nomor rekening pelaku di cekrekening.id dan patrolisiber.id.'
+        bold: 'Lapor OJK & Polisi (157):',
+        text: 'Laporkan rekening penipu ke kontak 157 dan portal cekrekening.id.'
       },
       {
         id: 's4-4',
-        bold: 'Waspadai penipuan pemulihan dana:',
-        text: 'Jangan percaya pihak di media sosial yang menjanjikan jasa balik dana dengan biaya di muka.'
+        bold: 'Waspada penipuan lanjutan:',
+        text: 'Jangan percaya pihak di media sosial yang menawarkan jasa pengembalian dana berbayar.'
       }
     ]
   }

@@ -55,7 +55,31 @@ export const SPARRING_PERSONAS = {
       'Kami dari petugas pusat tidak meminta uang, hanya butuh kode OTP pembatalan agar saldo Anda tidak terpotong otomatis.',
       'Jika Anda menutup percakapan ini, transaksi Rp 8.900.000 akan langsung kami setujui.'
     ]
+  },
+  fakeJobVip: {
+    id: 'fakeJobVip',
+    label: 'Admin Kerja Paruh Waktu VIP',
+    shortTag: 'Modus Deposit Tugas',
+    contactName: 'Mentor Tugas VIP E-Commerce',
+    contactAvatar: 'VIP',
+    openingMessage:
+      'Selamat Kak! Komisi tugas pertama Rp 75.000 sudah cair. Untuk membuka Tugas Bundling VIP dengan komisi Rp 1.850.000, silakan top-up deposit Rp 500.000 ke rekening bendahara kami sekarang.',
+    localFallbacks: [
+      'Slot VIP tinggal 1 orang lagi Kak! Begitu deposit Rp 500.000 masuk, modal beserta komisi Rp 1.850.000 langsung cair otomatis ke rekening Kakak dalam 5 menit.',
+      'Tidak bisa dipotong dari komisi Kak, karena sistem merchant mewajibkan saldo akun aktif minimal Rp 500.000 agar pesanan terbuka.',
+      'Semua anggota grup Telegram kami sudah cair jutaan hari ini Kak, jangan sampai hangus kuotanya.'
+    ]
   }
+};
+
+const PERSONA_ALIAS_MAP = {
+  courier: 'fakeCourier',
+  bank: 'fakeBankCs',
+  job: 'fakeJobVip',
+  hackedFriend: 'hackedFriend',
+  fakeCourier: 'fakeCourier',
+  fakeBankCs: 'fakeBankCs',
+  fakeJobVip: 'fakeJobVip'
 };
 
 /**
@@ -141,9 +165,10 @@ export function evaluateUserDefenseResponse(userReply) {
  */
 export function buildSmartContextualScammerReply(personaKey, turnIndex, userMessage = '') {
   const lower = userMessage.toLowerCase();
-  const persona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
+  const resolvedKey = PERSONA_ALIAS_MAP[personaKey] || personaKey || 'hackedFriend';
+  const persona = SPARRING_PERSONAS[resolvedKey] || SPARRING_PERSONAS.hackedFriend;
 
-  if (personaKey === 'hackedFriend') {
+  if (resolvedKey === 'hackedFriend') {
     if (/(video\s*call|vc|telepon|telpon|suara|muka)/i.test(lower)) {
       return 'Waduh bro, di ruang tindakan IGD lagi gak boleh berisik dan kamera depan HP gue retak parah. Udah percaya aja sama gue, transfer dulu ke BRI Dedi Pratama itu ya, darurat banget!';
     }
@@ -158,7 +183,7 @@ export function buildSmartContextualScammerReply(personaKey, turnIndex, userMess
     }
   }
 
-  if (personaKey === 'fakeCourier') {
+  if (resolvedKey === 'fakeCourier') {
     if (/(foto\s*biasa|jpg|png|screenshot|jangan\s*apk|tidak\s*mau\s*apk)/i.test(lower)) {
       return 'Dari sistem scanner gudang pusat otomatis ter-export jadi file aplikasi .APK Kak, tidak bisa foto JPG biasa. Kalau Kakak tidak buka dan klik Izinkan SMS sekarang, paket terpaksa kami retur.';
     }
@@ -170,7 +195,7 @@ export function buildSmartContextualScammerReply(personaKey, turnIndex, userMess
     }
   }
 
-  if (personaKey === 'fakeBankCs') {
+  if (resolvedKey === 'fakeBankCs') {
     if (/(call\s*center|1500888|14017|14000|157|kantor\s*cabang|aplikasi\s*resmi)/i.test(lower)) {
       return 'Antrean telepon Call Center sedang penuh Pak/Bu, dan transaksi Rp 8.900.000 ini akan otomatis terdebet dalam 90 detik jika Anda tidak menyebutkan 6 digit kode OTP pembatalan di chat ini.';
     }
@@ -179,6 +204,15 @@ export function buildSmartContextualScammerReply(personaKey, turnIndex, userMess
     }
     if (/(\d{6}|\d{4})/i.test(lower)) {
       return 'Kode sedang kami masukkan ke terminal... Tunggu sebentar, sistem meminta 6 digit kode OTP kedua yang baru saja masuk ke SMS Anda untuk menyelesaikan pembatalan.';
+    }
+  }
+
+  if (resolvedKey === 'fakeJobVip') {
+    if (/(potong\s*komisi|tidak\s*mau\s*deposit|jangan\s*transfer|penipu|scam|berhenti)/i.test(lower)) {
+      return 'Sayang sekali Kak, padahal komisi Rp 1.850.000 sudah siap cair di sistem! Hanya perlu top-up aktivasi Rp 500.000 ke rekening bendahara kami, 5 menit langsung balik modal penuh.';
+    }
+    if (/(rekening\s*pribadi|ojk|ilegal|lapor)/i.test(lower)) {
+      return 'Kami menggunakan rekening bendahara mitra resmi Kak agar pencairan komisi bebas pajak. Kuota tinggal 10 menit lagi sebelum akun Kakak dibekukan.';
     }
   }
 
@@ -222,8 +256,9 @@ function parseAiResponseText(rawBody) {
  * @returns {Promise<{ replyText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK', providerName?: string }>}
  */
 export async function requestHybridScammerReply(personaKey, turnIndex, userMessage, options = {}) {
-  const persona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
-  const smartFallback = buildSmartContextualScammerReply(personaKey, turnIndex, userMessage);
+  const resolvedKey = PERSONA_ALIAS_MAP[personaKey] || personaKey || 'hackedFriend';
+  const persona = SPARRING_PERSONAS[resolvedKey] || SPARRING_PERSONAS.hackedFriend;
+  const smartFallback = buildSmartContextualScammerReply(resolvedKey, turnIndex, userMessage);
 
   if (options.forceOffline) {
     return {
@@ -369,22 +404,20 @@ export function generateSafeVerificationReplies(rawText = '') {
 export function buildDeterministicContextualSummary(rawText = '', heuristicResult = {}) {
   const score = heuristicResult?.score ?? 0;
   const isPromo = Boolean(heuristicResult?.isTelcoPromoBroadcast);
-  const findings = (heuristicResult?.findings || []).filter(f => f.severity !== 'safe');
 
   if (isPromo && score < 35) {
-    return 'Pesan ini berpola broadcast iklan operator seluler resmi (myads.id & STOP 8000), bukan pencurian OTP/APK. Jika tertarik pada promo tersebut, cek langsung di aplikasi resmi bank.';
+    return 'Pesan ini adalah iklan promosi resmi operator seluler (MyAds & STOP 8000), bukan penipuan atau pencurian OTP. Anda aman.';
   }
 
   if (score >= 60) {
-    const titles = findings.map(f => f.title.toLowerCase()).join(', ');
-    return `Bahaya Tinggi (Skor ${score}/100): Terdeteksi pola ${titles || 'manipulasi tautan dan APK berbahaya'}. Abaikan klaim hadiah/penarikan dana, jangan klik tautan, dan jangan unduh file .APK.`;
+    return `Bahaya (Skor ${score}/100): Terdeteksi upaya penipuan. Jangan buka tautan, jangan instal .APK, dan jangan berikan kode OTP.`;
   }
 
   if (score >= 25) {
-    return `Waspada (Skor ${score}/100): Terdapat indikator mencurigakan. Jangan gunakan nomor atau tautan di dalam pesan; verifikasi langsung ke kanal resmi.`;
+    return `Waspada (Skor ${score}/100): Ditemukan indikasi mencurigakan. Selalu konfirmasi melalui aplikasi atau kontak resmi instansi.`;
   }
 
-  return 'Aman (Skor 0/100): Tidak ditemukan pola phishing, APK ilegal, atau pemerasan OTP. Tetap pastikan transaksi hanya di aplikasi resmi.';
+  return 'Aman (Skor 0/100): Tidak ditemukan indikasi bahaya atau berkas berbahaya. Tetap jaga kerahasiaan kata sandi dan PIN Anda.';
 }
 
 /**
@@ -394,23 +427,25 @@ export function buildDeterministicContextualSummary(rawText = '', heuristicResul
  *
  * @param {string} rawText
  * @param {object} heuristicResult
- * @returns {Promise<{ summaryText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK' }>}
+ * @returns {Promise<{ summaryText: string, source: 'AI_HYBRID'|'LOCAL_FALLBACK', providerName: string }>}
  */
 export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
   const localSummary = buildDeterministicContextualSummary(rawText, heuristicResult);
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+    return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal (Offline)' };
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7500);
+  const timeoutId = setTimeout(() => controller.abort(), 6500);
 
   try {
+    const isPromo = Boolean(heuristicResult?.isTelcoPromoBroadcast);
     const systemPrompt = [
-      'Anda adalah Analis Keamanan Siber TUNTUN.',
-      `Skor deterministik pesan ini: ${heuristicResult?.score ?? 0}/100 (${heuristicResult?.verdictBadgeText || 'Netral'}).`,
-      'Jelaskan dalam maksimal 2 kalimat singkat bahasa Indonesia tanpa emoji: apa motif pesan ini dan langkah aman bagi penerima.'
+      'Anda adalah Asisten Analis Keamanan Siber TUNTUN.',
+      `Konteks: ${isPromo ? 'Pesan teridentifikasi sebagai broadcast iklan promosi operator.' : `Skor risiko: ${heuristicResult?.score ?? 0}/100.`}`,
+      'Berikan kesimpulan verifikasi dalam MAKSIMAL 2 kalimat Bahasa Indonesia yang sangat jelas, ramah, dan mudah dipahami remaja hingga lansia.',
+      'Sebutkan dengan tegas: Apakah pesan ini aman/resmi atau penipuan, dan tindakan apa yang sebaiknya diambil penerima.'
     ].join(' ');
 
     const response = await fetch('https://text.pollinations.ai/openai', {
@@ -421,7 +456,7 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
         model: 'openai-fast',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analisis pesan ini:\n"${rawText}"` }
+          { role: 'user', content: `Evaluasi pesan ini secara objektif:\n"${rawText}"` }
         ]
       })
     });
@@ -429,24 +464,78 @@ export async function requestHybridMessageAnalysis(rawText, heuristicResult) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+      return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal Cepat' };
     }
 
     const rawBody = await response.text();
     const cleaned = parseAiResponseText(rawBody);
     if (!cleaned || cleaned.length < 15 || cleaned.length > 520) {
-      return { summaryText: localSummary, source: 'LOCAL_FALLBACK' };
+      return { summaryText: localSummary, source: 'LOCAL_FALLBACK', providerName: 'Analisis Lokal Cepat' };
     }
 
     return {
       summaryText: cleaned,
-      source: 'AI_HYBRID'
+      source: 'AI_HYBRID',
+      providerName: 'AI Cloud Gratis (Online)'
     };
   } catch {
     clearTimeout(timeoutId);
     return {
       summaryText: localSummary,
-      source: 'LOCAL_FALLBACK'
+      source: 'LOCAL_FALLBACK',
+      providerName: 'Analisis Lokal Cepat'
     };
+  }
+}
+
+/**
+ * Free Interactive AI Chatbot Consultation for Scanner / Simulator.
+ * Allows users to ask any question to the free AI about the scanned message.
+ *
+ * @param {string} userQuestion
+ * @param {string} contextMessage
+ * @returns {Promise<string>}
+ */
+export async function askAiChatbotFree(userQuestion, contextMessage = '') {
+  const fallback = 'Pihak resmi tidak pernah meminta kode OTP, PIN, atau mengunduh berkas .APK melalui chat. Selalu hubungi Call Center resmi jika Anda ragu.';
+
+  if (!userQuestion || !userQuestion.trim()) return fallback;
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return fallback;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+  try {
+    const response = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'openai-fast',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Anda adalah Asisten Keamanan TUNTUN. Jawab pertanyaan pengguna dengan ramah, lugas, dan praktis dalam maksimal 2 kalimat Bahasa Indonesia agar mudah dipahami dari remaja hingga lansia. Konteks pesan yang diperiksa: "' +
+              (contextMessage || '').slice(0, 200) +
+              '"'
+          },
+          { role: 'user', content: userQuestion.trim() }
+        ]
+      })
+    });
+
+    clearTimeout(timeoutId);
+    if (!response.ok) return fallback;
+
+    const rawBody = await response.text();
+    const cleaned = parseAiResponseText(rawBody);
+    return cleaned && cleaned.length >= 10 ? cleaned : fallback;
+  } catch {
+    clearTimeout(timeoutId);
+    return fallback;
   }
 }

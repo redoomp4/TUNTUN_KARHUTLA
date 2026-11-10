@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Interactive 3D Smartphone Forensic X-Ray Motion Graphic
  * Features real-time 3D perspective mouse tilt, sweeping laser scanline,
- * floating parallax HUD callouts, and an exploded 3D layer inspection toggle.
+ * floating parallax HUD callouts, 3D auto-rotate for touchscreens, and senior zoom.
  */
 export default function PhoneMotionGraphic({
   activeScore = 0,
@@ -16,9 +16,27 @@ export default function PhoneMotionGraphic({
   const stageRef = useRef(null);
   const [tilt, setTilt] = useState({ rx: 6, ry: -10 });
   const [exploded3D, setExploded3D] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [seniorZoom, setSeniorZoom] = useState(false);
+
+  useEffect(() => {
+    if (!autoRotate) return;
+    let angle = 0;
+    let animId;
+    const loop = () => {
+      angle += 0.025;
+      setTilt({
+        rx: Number((Math.sin(angle) * 12).toFixed(2)),
+        ry: Number((Math.cos(angle) * 16).toFixed(2))
+      });
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [autoRotate]);
 
   const handleMouseMove = (e) => {
-    if (!stageRef.current) return;
+    if (autoRotate || !stageRef.current) return;
     const rect = stageRef.current.getBoundingClientRect();
     const nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
     const ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
@@ -29,7 +47,9 @@ export default function PhoneMotionGraphic({
   };
 
   const handleMouseLeave = () => {
-    setTilt({ rx: 6, ry: -10 });
+    if (!autoRotate) {
+      setTilt({ rx: 6, ry: -10 });
+    }
   };
 
   const statusTone = fileReport
@@ -78,6 +98,22 @@ export default function PhoneMotionGraphic({
         <div className="phone-stage-controls">
           <button
             type="button"
+            className={`btn-chip ${autoRotate ? 'active' : ''}`}
+            onClick={() => setAutoRotate(prev => !prev)}
+            title="Putar Otomatis Sudut 3D Smartphone"
+          >
+            {autoRotate ? 'Hentikan Putar 3D' : 'Putar 3D Otomatis'}
+          </button>
+          <button
+            type="button"
+            className={`btn-chip ${seniorZoom ? 'active' : ''}`}
+            onClick={() => setSeniorZoom(prev => !prev)}
+            title="Perbesar Teks Layar HP untuk Lansia"
+          >
+            {seniorZoom ? 'Ukuran Standar' : 'Teks Besar (Lansia)'}
+          </button>
+          <button
+            type="button"
             className="btn-chip"
             onClick={() => setExploded3D(prev => !prev)}
           >
@@ -95,7 +131,7 @@ export default function PhoneMotionGraphic({
         </div>
       </div>
 
-      <div className="phone-perspective-viewport">
+      <div className={`phone-perspective-viewport ${seniorZoom ? 'senior-viewport-zoom' : ''}`}>
         <div
           className="phone-chassis-3d"
           style={{
@@ -135,7 +171,7 @@ export default function PhoneMotionGraphic({
               <div className="phone-layer layer-message">
                 <div className="phone-app-header">
                   <img
-                    src="/logo_TUNTUN.jpeg"
+                    src="/logo_TUNTUN.jpeg?v=2"
                     alt=""
                     className="phone-mini-logo"
                     width="18"

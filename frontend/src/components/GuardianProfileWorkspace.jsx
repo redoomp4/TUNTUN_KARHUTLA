@@ -16,40 +16,39 @@ export default function GuardianProfileWorkspace({ hidden }) {
 
   const targetCount = [
     currentCase.senderClue,
-    ...currentCase.bodyBlocks.filter(b => b.type === 'clue')
-  ].filter(c => c.isRisk).length;
+    ...currentCase.bodyBlocks.filter((b) => b.type === 'clue')
+  ].filter((c) => c.isRisk).length;
 
   const totalHits = completedCaseEntries.reduce((acc, r) => acc + (r.hits || 0), 0);
   const totalTargets = completedCaseEntries.reduce((acc, r) => acc + (r.totalTargets || 0), 0);
   const totalFalsePositives = completedCaseEntries.reduce((acc, r) => acc + (r.falsePositives || 0), 0);
 
-  let statusTitle = 'Belum dianalisis';
-  let statusDesc = 'Selesaikan minimal satu skenario simulasi atau periksa satu kasus bukti untuk melihat evaluasi sesi Anda.';
+  let statusTitle = 'Belum Dianalisis';
+  let statusDesc = 'Selesaikan minimal satu simulasi atau kasus detektif untuk melihat skor kesiapan Anda.';
 
   if (preparedness.hasData) {
     if (preparedness.tier === 'RESILIENT') {
-      statusTitle = 'Digital Guardian Tangguh (Sangat Baik)';
-      statusDesc = `Sesi ${sessionState.sessionId}: Anda mampu membedakan bukti berbahaya dan mengambil keputusan aman secara konsisten.`;
+      statusTitle = 'Siaga Tangguh (Sangat Baik)';
+      statusDesc = 'Anda konsisten mengenali ciri penipuan dan mengambil keputusan aman.';
     } else if (preparedness.tier === 'MODERATE') {
-      statusTitle = 'Tingkat Kewaspadaan Cukup Baik';
-      statusDesc = `Sesi ${sessionState.sessionId}: Sebagian besar ancaman dikenali, namun perhatikan kembali indikator yang terlewat di bawah.`;
+      statusTitle = 'Cukup Waspada';
+      statusDesc = 'Sebagian besar ancaman dikenali, tingkatkan lagi ketelitian pada tautan samaran.';
     } else {
-      statusTitle = 'Rentan Terhadap Rekayasa Sosial';
-      statusDesc = `Sesi ${sessionState.sessionId}: Banyak indikator kunci terlewat atau keputusan berisiko diambil. Pelajari Action Guide di atas.`;
+      statusTitle = 'Perlu Latihan Tambahan';
+      statusDesc = 'Masih ada keputusan berisiko. Pelajari kembali langkah penyelamatan di menu Panduan.';
     }
   }
 
   const buildAuditSummaryText = () => {
     const scoreText = preparedness.hasData ? preparedness.avgScore : '--';
     return [
-      `=== RINGKASAN EVALUASI DIGITAL GUARDIAN (${sessionState.sessionId}) ===`,
-      `Skor Kesiapsiagaan Sesi : ${scoreText} / 100 (${statusTitle})`,
-      `Skenario Simulator      : ${simDoneCount} / 3 selesai (Aman: ${sessionState.simulator?.safeDecisions || 0} | Berisiko: ${sessionState.simulator?.riskyDecisions || 0})`,
-      `Kasus Scam Detective    : ${detDoneCount} / 3 selesai (Tepat: ${totalHits} | Pengecoh: ${totalFalsePositives})`,
-      `Pesan & Berkas Dipindai : ${(sessionState.scanHistory || []).length}`,
-      `Area Kemampuan Terkuat  : ${preparedness.strengthLabel}`,
-      `Rekomendasi Materi      : ${preparedness.weaknessLabel}`,
-      `Catatan: Evaluasi ini bersifat edukatif untuk latihan deteksi penipuan digital.`
+      `=== RINGKASAN EVALUASI TUNTUN (${sessionState.sessionId}) ===`,
+      `Skor Kesiapsiagaan : ${scoreText} / 100 (${statusTitle})`,
+      `Simulasi Selesai   : ${simDoneCount} / 3 (Aman: ${sessionState.simulator?.safeDecisions || 0} | Berisiko: ${sessionState.simulator?.riskyDecisions || 0})`,
+      `Detektif Selesai   : ${detDoneCount} / 3 (Tepat: ${totalHits} | Pengecoh: ${totalFalsePositives})`,
+      `Pesan Dipindai     : ${(sessionState.scanHistory || []).length}`,
+      `Kekuatan Utama     : ${preparedness.strengthLabel}`,
+      `Fokus Latihan      : ${preparedness.weaknessLabel}`
     ].join('\n');
   };
 
@@ -67,7 +66,7 @@ export default function GuardianProfileWorkspace({ hidden }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Laporan-Evaluasi-${sessionState.sessionId}.txt`;
+    a.download = `Evaluasi-TUNTUN-${sessionState.sessionId}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -83,27 +82,14 @@ export default function GuardianProfileWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
-        {/* Top Creative Telemetry Strip */}
-        <div className="creative-strip-bar dark-strip">
-          <div className="strip-item">
-            <span className="strip-dot dot-green" />
-            <span>Sesi Aktif: <strong>{sessionState.sessionId}</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Status: <strong>{statusTitle}</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Total Pindai: <strong>{(sessionState.scanHistory || []).length} item</strong></span>
-          </div>
-          <span className="widget-mini-tag">Lanyard 3D + Hologram Aktif</span>
-        </div>
-
         <div className="profile-closing-grid" id="guardian-profile-card">
-          {/* Left Column: Session Score & Summary */}
+          {/* Left Column: Concise Session Evaluation & Breakdown */}
           <div className="profile-summary-col">
-            <h2 id="profile-view-heading" className="section-title on-field">Profil &amp; Lanyard ID</h2>
+            <h2 id="profile-view-heading" className="section-title on-field">
+              Evaluasi Sesi &amp; <span className="kw-on-dark">Kartu Darurat Keluarga</span>
+            </h2>
             <p className="section-description on-field-secondary">
-              Evaluasi kesiapsiagaan sesi Anda beserta kartu ID Lanyard interaktif yang dapat dikustomisasi dan diunduh.
+              Pantau skor latihan Anda dan sesuaikan <strong>Kartu Lanyard S.O.S.</strong> di samping untuk pegangan <strong>Remaja</strong>, <strong>Orang Tua</strong>, hingga <strong>Lansia</strong>.
             </p>
 
             <div className="profile-score-block">
@@ -122,33 +108,75 @@ export default function GuardianProfileWorkspace({ hidden }) {
               </div>
             </div>
 
-            <div className="profile-actions-row">
+            <div className="dark-ruled-list">
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Keputusan aman di Simulator</span>
+                <strong className="breakdown-val" id="profile-sim-safe">
+                  {sessionState.simulator?.safeDecisions || 0} tepat
+                </strong>
+              </div>
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Keputusan berisiko di Simulator</span>
+                <strong className="breakdown-val" id="profile-sim-risks">
+                  {sessionState.simulator?.riskyDecisions || 0} risiko
+                </strong>
+              </div>
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Bukti penipuan tepat dikenali</span>
+                <strong className="breakdown-val" id="profile-hits">
+                  {detDoneCount > 0 ? `${totalHits}/${totalTargets} (${detDoneCount}/3 kasus)` : `0/${targetCount}`}
+                </strong>
+              </div>
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Pengecoh aman yang tertuduh</span>
+                <strong className="breakdown-val" id="profile-false-positives">
+                  {detDoneCount > 0 ? `${totalFalsePositives} pengecoh` : '0'}
+                </strong>
+              </div>
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Kemampuan terkuat</span>
+                <strong className="breakdown-val" id="profile-strength">
+                  {preparedness.strengthLabel}
+                </strong>
+              </div>
+              <div className="dark-ruled-row">
+                <span className="breakdown-label">Saran latihan</span>
+                <strong className="breakdown-val" id="profile-weakness">
+                  {preparedness.weaknessLabel}
+                </strong>
+              </div>
+            </div>
+
+            <div className="profile-actions-row" style={{ marginTop: '20px' }}>
               <button
                 id="profile-copy-btn"
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 onClick={handleCopySummary}
               >
-                {copyFeedback ? 'Ringkasan disalin' : 'Salin ringkasan evaluasi'}
+                {copyFeedback ? 'Tersalin' : 'Salin Evaluasi'}
               </button>
               <button
                 id="profile-download-btn"
                 type="button"
-                className="btn btn-secondary-dark"
+                className="btn btn-secondary-dark btn-sm"
                 onClick={handleDownloadAuditReport}
               >
-                Unduh laporan sesi (.txt)
+                Unduh Laporan (.txt)
               </button>
               <button
                 id="profile-full-reset-btn"
                 type="button"
-                className="btn btn-secondary-dark"
+                className="btn btn-secondary-dark btn-sm"
                 onClick={resetFullSession}
               >
-                Atur ulang seluruh sesi
+                Reset Sesi
               </button>
             </div>
+          </div>
 
+          {/* Right Column: Dedicated 3D Interactive Lanyard Showcase */}
+          <div className="profile-metrics-col">
             <GuardianLanyard
               sessionId={sessionState.sessionId}
               score={preparedness.hasData ? preparedness.avgScore : '--'}
@@ -157,51 +185,6 @@ export default function GuardianProfileWorkspace({ hidden }) {
               scanCount={(sessionState.scanHistory || []).length}
               detDoneCount={detDoneCount}
             />
-          </div>
-
-          {/* Right Column: Ruled Breakdown List */}
-          <div className="profile-metrics-col">
-            <div className="dark-ruled-list">
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Keputusan aman di Simulator</span>
-                <strong className="breakdown-val" id="profile-sim-safe">
-                  {sessionState.simulator?.safeDecisions || 0} keputusan
-                </strong>
-              </div>
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Keputusan berisiko di Simulator</span>
-                <strong className="breakdown-val" id="profile-sim-risks">
-                  {sessionState.simulator?.riskyDecisions || 0} keputusan
-                </strong>
-              </div>
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Indikator Detective tepat dikenali</span>
-                <strong className="breakdown-val" id="profile-hits">
-                  {detDoneCount > 0 ? `${totalHits} / ${totalTargets} (${detDoneCount}/3 kasus)` : `0 / ${targetCount}`}
-                </strong>
-              </div>
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Elemen normal yang salah dituduh</span>
-                <strong className="breakdown-val" id="profile-false-positives">
-                  {detDoneCount > 0 ? `${totalFalsePositives} pengecoh` : '0'}
-                </strong>
-              </div>
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Area kemampuan terkuat</span>
-                <strong className="breakdown-val" id="profile-strength">
-                  {preparedness.strengthLabel}
-                </strong>
-              </div>
-              <div className="dark-ruled-row">
-                <span className="breakdown-label">Rekomendasi materi latihan</span>
-                <strong className="breakdown-val" id="profile-weakness">
-                  {preparedness.weaknessLabel}
-                </strong>
-              </div>
-            </div>
-            <p className="profile-disclaimer">
-              Catatan: Skor ini merupakan evaluasi pembelajaran sesi saat ini dan bukan jaminan deteksi seluruh bentuk penipuan digital.
-            </p>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { DETECTIVE_CASES } from '../data/detectiveCases.js';
 import { evaluateDetectiveSubmission } from '../engines/scoringEngine.js';
 
 export default function DetectiveWorkspace({ hidden }) {
-  const { sessionState, saveDetectiveCaseResult, resetDetectiveCaseResult, navigateToView } = useGuardian();
+  const { sessionState, saveDetectiveCaseResult, resetDetectiveCaseResult } = useGuardian();
   const [activeCaseKey, setActiveCaseKey] = useState(sessionState.detective?.activeCase || 'prize');
   const [selectedIds, setSelectedIds] = useState([]);
   const [validationError, setValidationError] = useState(false);
@@ -59,32 +59,13 @@ export default function DetectiveWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
-        {/* Creative Top Strip Bar */}
-        <div className="creative-strip-bar">
-          <div className="strip-item">
-            <span className="strip-dot dot-blue" />
-            <span>Laboratorium Bukti: <strong>{currentCase.tag}</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Target Risiko: <strong>{targetRiskCount} Indikator</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Skor Kasus: <strong>{savedResult ? `${savedResult.score}/100` : 'Belum dinilai'}</strong></span>
-          </div>
-          <button
-            type="button"
-            className="strip-lanyard-pill light-pill"
-            onClick={() => navigateToView('profile')}
-          >
-            Lihat Lanyard ID
-          </button>
-        </div>
-
         <div className="section-intro-row">
           <div className="section-intro-copy">
-            <h2 id="detective-heading" className="section-title">Detektif Bukti</h2>
+            <h2 id="detective-heading" className="section-title">
+              Temukan <span className="kw-danger">{targetRiskCount} Ciri Penipuan</span> di Dalam Pesan
+            </h2>
             <p className="section-description">
-              Klik bagian pesan yang mencurigakan. Waspadai elemen normal sebagai pengecoh.
+              Klik dan tandai <strong>potongan kalimat mencurigakan</strong> atau <strong>domain palsu</strong>. Hati-hati, jangan menuduh <strong>elemen pesan yang normal</strong>.
             </p>
           </div>
 
@@ -102,7 +83,7 @@ export default function DetectiveWorkspace({ hidden }) {
                   data-case={c.id}
                   onClick={() => setActiveCaseKey(c.id)}
                 >
-                  {c.tabLabel}{isDone ? ' (Selesai)' : ''}
+                  {c.tabLabel}{isDone ? ' ✓' : ''}
                 </button>
               );
             })}
@@ -110,14 +91,14 @@ export default function DetectiveWorkspace({ hidden }) {
         </div>
 
         <div className="detective-layout">
-          {/* Left Card: Evidence Inspection */}
+          {/* Left Card: Suspect Message Specimen */}
           <div className="evidence-card" id="evidence-view">
             <div className="evidence-top-bar">
               <div>
                 <span className="evidence-case-tag" id="detective-case-tag">{currentCase.tag}</span>
                 <h3 className="evidence-title" id="detective-case-title">{currentCase.title}</h3>
               </div>
-              <span className="instruction-hint">Klik bagian pesan yang mencurigakan</span>
+              <span className="instruction-hint">Klik kalimat mencurigakan</span>
             </div>
 
             <div className="suspect-message-box">
@@ -168,56 +149,56 @@ export default function DetectiveWorkspace({ hidden }) {
               hidden={!validationError}
               role="alert"
             >
-              Pilih minimal satu bagian pada pesan di atas sebelum memeriksa jawaban.
+              Pilih minimal satu bagian pada pesan di atas sebelum menguji temuan.
             </div>
 
             <div className="evidence-footer">
               <div className="selected-counter">
-                Indikator ditandai: <strong id="selected-clues-count">{selectedIds.length}</strong> dipilih
+                Ditandai: <strong id="selected-clues-count">{selectedIds.length}</strong> bagian
               </div>
               <div className="evidence-actions">
                 <button
                   id="reset-detective-btn"
-                  className="btn btn-secondary"
+                  className="btn btn-secondary btn-sm"
                   type="button"
                   onClick={handleReset}
                 >
-                  Atur ulang
+                  Reset
                 </button>
                 <button
                   id="submit-report-btn"
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   type="button"
                   onClick={handleSubmit}
                 >
-                  Periksa temuan
+                  Periksa Temuan
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Right Card: Forensic Result Panel */}
+          {/* Right Card: Concise Accuracy & Findings */}
           <div className="detective-result-card">
-            <h3 className="panel-heading">Hasil evaluasi bukti</h3>
+            <h3 className="panel-heading">Hasil Analisis Anda</h3>
             <p className="panel-subtext">
-              Rincian ketepatan analisis Anda pada kasus yang sedang dibuka.
+              Periksa kombinasi <strong>domain pengirim</strong>, <strong>permintaan uang</strong>, dan <strong>tautan</strong>.
             </p>
 
             <div className="ruled-metrics-list">
               <div className="ruled-metric-row">
-                <span>Indikator berbahaya tepat dikenali</span>
+                <span>Ciri penipuan tepat</span>
                 <strong id="detective-tp-count">
                   {savedResult ? `${savedResult.hits} / ${savedResult.totalTargets}` : `0 / ${targetRiskCount}`}
                 </strong>
               </div>
               <div className="ruled-metric-row">
-                <span>Elemen normal yang salah dituduh</span>
+                <span>Elemen normal tertuduh</span>
                 <strong id="detective-fp-count">
-                  {savedResult ? `${savedResult.falsePositives} pengecoh` : '0'}
+                  {savedResult ? `${savedResult.falsePositives}` : '0'}
                 </strong>
               </div>
               <div className="ruled-metric-row">
-                <span>Skor akurasi kasus ini</span>
+                <span>Skor ketelitian</span>
                 <strong id="detective-case-score">
                   {savedResult ? `${savedResult.score} / 100` : '-- / 100'}
                 </strong>
@@ -226,7 +207,7 @@ export default function DetectiveWorkspace({ hidden }) {
 
             <div
               id="detective-feedback-list"
-              className="detective-feedback-list"
+              className="detective-feedback-list compact-scroll-area"
               hidden={!savedResult}
             >
               {savedResult && allClues.map((clue) => {
@@ -236,7 +217,7 @@ export default function DetectiveWorkspace({ hidden }) {
                 if (clue.isRisk && isPicked) {
                   return (
                     <div key={clue.id} className="clue-result-item clue-result-hit">
-                      <strong>Tepat dikenali: {clue.title}</strong>
+                      <strong>Tepat Dikenali: {clue.title}</strong>
                       <p>{clue.desc}</p>
                     </div>
                   );
@@ -244,14 +225,14 @@ export default function DetectiveWorkspace({ hidden }) {
                 if (clue.isRisk && !isPicked) {
                   return (
                     <div key={clue.id} className="clue-result-item clue-result-missed">
-                      <strong>Indikator terlewat: {clue.title}</strong>
+                      <strong>Bukti Terlewat: {clue.title}</strong>
                       <p>{clue.desc}</p>
                     </div>
                   );
                 }
                 return (
                   <div key={clue.id} className="clue-result-item clue-result-fp">
-                    <strong>Elemen normal (pengecoh): {clue.title}</strong>
+                    <strong>Pengecoh Aman: {clue.title}</strong>
                     <p>{clue.desc}</p>
                   </div>
                 );
@@ -268,15 +249,11 @@ export default function DetectiveWorkspace({ hidden }) {
                       setActiveCaseKey(order[nextIdx]);
                     }}
                   >
-                    Lanjut ke kasus berikutnya
+                    Buka Kasus Berikutnya
                   </button>
                 </div>
               )}
             </div>
-
-            <p className="nfr-telemetry-meta" style={{ marginTop: '14px' }}>
-              Prinsip FR-09: Satu tanda saja belum tentu bukti mutlak; periksa kombinasi domain, permintaan biaya, dan pengirim.
-            </p>
           </div>
         </div>
       </div>

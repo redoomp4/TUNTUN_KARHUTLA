@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGuardian } from '../context/GuardianContext.jsx';
 import { SIMULATOR_SCENARIOS } from '../data/simulatorScenarios.js';
 import {
-  SPARRING_PERSONAS,
   evaluateUserDefenseResponse,
   requestHybridScammerReply
 } from '../engines/hybridAiEngine.js';
@@ -12,82 +11,26 @@ export default function SimulatorWorkspace({ hidden }) {
     sessionState,
     recordSimulatorDecision,
     restartSimulatorScenario,
-    setSimulatorScenario,
-    navigateToView
+    setSimulatorScenario
   } = useGuardian();
+
   const activeKey = sessionState.simulator?.activeScenario || 'courier';
   const scenario = SIMULATOR_SCENARIOS[activeKey] || SIMULATOR_SCENARIOS.courier;
 
   const [stepIndex, setStepIndex] = useState(0);
   const [score, setScore] = useState(100);
-  const [attemptNum, setAttemptNum] = useState(1);
   const [riskLabel, setRiskLabel] = useState(scenario.initialRisk);
   const [selectedChoice, setSelectedChoice] = useState(null);
+
+  // Unified Chat Log state: combines scenario step messages + manual AI exchanges
+  const [customExchanges, setCustomExchanges] = useState([]);
+  const [manualInput, setManualInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [manualTurn, setManualTurn] = useState(0);
+  const [manualEval, setManualEval] = useState(null);
+  const [aiSourceLabel, setAiSourceLabel] = useState('AI Gratis Siap');
+
   const chatScrollRef = useRef(null);
-  const sparringScrollRef = useRef(null);
-
-  // Free Hybrid AI Dynamic Sparring State
-  const [personaKey, setPersonaKey] = useState('hackedFriend');
-  const activePersona = SPARRING_PERSONAS[personaKey] || SPARRING_PERSONAS.hackedFriend;
-  const [sparringMessages, setSparringMessages] = useState([
-    { sender: 'scammer', text: SPARRING_PERSONAS.hackedFriend.openingMessage, source: 'INITIAL' }
-  ]);
-  const [sparringInput, setSparringInput] = useState('');
-  const [sparringTurn, setSparringTurn] = useState(0);
-  const [sparringScore, setSparringScore] = useState(100);
-  const [sparringLoading, setSparringLoading] = useState(false);
-  const [lastGuardrailEval, setLastGuardrailEval] = useState(null);
-  const [lastEngineSource, setLastEngineSource] = useState('Pollinations OpenAI Gratis (Siap)');
-
-  const handleSelectPersona = (key) => {
-    const p = SPARRING_PERSONAS[key] || SPARRING_PERSONAS.hackedFriend;
-    setPersonaKey(key);
-    setSparringMessages([{ sender: 'scammer', text: p.openingMessage, source: 'INITIAL' }]);
-    setSparringInput('');
-    setSparringTurn(0);
-    setSparringScore(100);
-    setLastGuardrailEval(null);
-    setLastEngineSource('Pollinations OpenAI Gratis (Siap)');
-  };
-
-  const handleSendSparringReply = async (customText) => {
-    const textToSend = (typeof customText === 'string' ? customText : sparringInput).trim();
-    if (!textToSend || sparringLoading) return;
-
-    // 1. Deterministic Guardrail Evaluation (Sole authority for scoring per prompt.MD)
-    const evalResult = evaluateUserDefenseResponse(textToSend);
-    setLastGuardrailEval(evalResult);
-    setSparringScore(prev => Math.max(0, Math.min(100, prev + evalResult.scoreDelta)));
-    recordSimulatorDecision(evalResult.verdict === 'DANGEROUS' || evalResult.verdict === 'RISKY', null, null);
-
-    const updatedHistory = [...sparringMessages, { sender: 'user', text: textToSend }];
-    setSparringMessages(updatedHistory);
-    setSparringInput('');
-    setSparringLoading(true);
-
-    // 2. Free Cloud AI Dynamic Response (https://text.pollinations.ai/openai) + Contextual Fallback
-    const aiReply = await requestHybridScammerReply(personaKey, sparringTurn, textToSend, {
-      history: updatedHistory
-    });
-    setSparringMessages(prev => [
-      ...prev,
-      { sender: 'scammer', text: aiReply.replyText, source: aiReply.source }
-    ]);
-    setLastEngineSource(
-      aiReply.source === 'AI_HYBRID'
-        ? 'Cloud AI Gratis Aktif (OpenAI)'
-        : 'Mesin Kontekstual Pintar (NFR-09)'
-    );
-    setSparringTurn(prev => prev + 1);
-    setSparringLoading(false);
-  };
-
-  useEffect(() => {
-    if (sparringScrollRef.current) {
-      sparringScrollRef.current.scrollTop = sparringScrollRef.current.scrollHeight;
-    }
-  }, [sparringMessages, sparringLoading]);
-
   const currentStep = scenario.steps[stepIndex] || scenario.steps[0];
 
   useEffect(() => {
@@ -95,21 +38,28 @@ export default function SimulatorWorkspace({ hidden }) {
     setScore(100);
     setRiskLabel(scenario.initialRisk);
     setSelectedChoice(null);
+    setCustomExchanges([]);
+    setManualInput('');
+    setManualTurn(0);
+    setManualEval(null);
   }, [activeKey, scenario.initialRisk]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [stepIndex, selectedChoice]);
+  }, [stepIndex, selectedChoice, customExchanges, aiLoading]);
 
   const handleRestart = () => {
     restartSimulatorScenario(activeKey);
     setStepIndex(0);
     setScore(100);
-    setAttemptNum(prev => prev + 1);
     setRiskLabel(scenario.initialRisk);
     setSelectedChoice(null);
+    setCustomExchanges([]);
+    setManualInput('');
+    setManualTurn(0);
+    setManualEval(null);
   };
 
   const handleSelectChoice = (choice) => {
@@ -117,6 +67,7 @@ export default function SimulatorWorkspace({ hidden }) {
     setScore(nextScore);
     setRiskLabel(choice.riskLevel);
     setSelectedChoice(choice);
+    setManualEval(null);
 
     const isRisky =
       choice.consequence === 'DANGEROUS' ||
@@ -132,21 +83,66 @@ export default function SimulatorWorkspace({ hidden }) {
       handleRestart();
       return;
     }
-    const targetIdx = scenario.steps.findIndex(s => s.stepNum === selectedChoice.nextStep);
+    const targetIdx = scenario.steps.findIndex((s) => s.stepNum === selectedChoice.nextStep);
     if (targetIdx !== -1) {
       setStepIndex(targetIdx);
       setSelectedChoice(null);
+      setCustomExchanges([]);
+      setManualEval(null);
     } else {
       handleRestart();
     }
   };
 
+  const handleSendManualChat = async (presetReply) => {
+    const textToSend = (typeof presetReply === 'string' ? presetReply : manualInput).trim();
+    if (!textToSend || aiLoading) return;
+
+    const evalRes = evaluateUserDefenseResponse(textToSend);
+    const nextScore = Math.max(0, Math.min(100, score + evalRes.scoreDelta));
+    setScore(nextScore);
+    setRiskLabel(evalRes.badgeText);
+    setManualEval(evalRes);
+
+    const isRisky = evalRes.verdict === 'DANGEROUS';
+    recordSimulatorDecision(isRisky, null, nextScore, activeKey);
+
+    const nextExchanges = [
+      ...customExchanges,
+      { sender: 'user', text: textToSend, meta: 'Dikirim (Chat Manual)' }
+    ];
+    setCustomExchanges(nextExchanges);
+    setManualInput('');
+    setAiLoading(true);
+
+    const fullHistory = [
+      ...currentStep.botMessages.map((m) => ({ sender: 'scammer', text: m })),
+      ...nextExchanges
+    ];
+
+    const aiReply = await requestHybridScammerReply(activeKey, manualTurn, textToSend, {
+      history: fullHistory
+    });
+
+    setCustomExchanges((prev) => [
+      ...prev,
+      {
+        sender: 'scammer',
+        text: aiReply.replyText,
+        meta: aiReply.source === 'AI_HYBRID' ? 'Balasan AI Gratis' : 'Balasan Simulasi Pintar'
+      }
+    ]);
+    setAiSourceLabel(aiReply.source === 'AI_HYBRID' ? 'AI Cloud Gratis Aktif' : 'AI Kontekstual Aktif');
+    setManualTurn((prev) => prev + 1);
+    setAiLoading(false);
+  };
+
   const getRiskBadgeClass = (label) => {
     const l = (label || '').toLowerCase();
-    if (l.includes('bahaya') || l.includes('kritis') || l.includes('kompromi') || l.includes('kerugian')) {
+    if (l.includes('bahaya') || l.includes('kritis') || l.includes('kompromi') || l.includes('kerugian') || l.includes('tinggi')) {
       return 'risk-badge risk-high';
     }
-    if (l.includes('aman') || l.includes('terselamatkan')) {
+    if (l.includes('aman') || l.includes('terselamatkan') || l.includes('tepat')) {
       return 'risk-badge risk-safe';
     }
     return 'risk-badge risk-normal';
@@ -161,32 +157,17 @@ export default function SimulatorWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
-        {/* Top Creative Telemetry Strip */}
-        <div className="creative-strip-bar dark-strip">
-          <div className="strip-item">
-            <span className="strip-dot dot-green" />
-            <span>Mode: <strong>Simulasi Interaktif &amp; Chatbot AI Gratis</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Skor Skenario: <strong>{score}/100</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Skor Chatbot AI: <strong>{sparringScore}/100</strong></span>
-          </div>
-          <button
-            type="button"
-            className="strip-lanyard-pill"
-            onClick={() => navigateToView('profile')}
-          >
-            Lihat Lanyard ID Sesi
-          </button>
-        </div>
-
-        <div className="section-intro-row">
-          <div className="section-intro-copy">
-            <h2 id="sim-heading" className="section-title on-field">Simulasi Keputusan</h2>
+        {/* Standard Left-Aligned Header Matching Previous Pages */}
+        <div className="section-intro-row sim-single-header">
+          <div className="section-intro-copy sim-single-title-block">
+            <h2 id="sim-heading" className="section-title on-field">
+              Latihan Menghadapi <span className="kw-on-dark">Chat Penipu</span>
+            </h2>
             <p className="section-description on-field-secondary">
-              Pilih skenario dan uji keputusan Anda menghadapi modus penipuan populer.
+              Uji cara Anda menolak <strong className="kw-on-dark">file .APK berbahaya</strong>, jebakan{' '}
+              <strong className="kw-on-dark">kode OTP</strong>, dan tawaran{' '}
+              <strong className="kw-on-dark">deposit komisi palsu</strong>. Anda bebas memilih tombol{' '}
+              <strong>Pilihan Cepat</strong> atau <strong>mengetik balasan manual</strong> ke AI.
             </p>
           </div>
 
@@ -213,53 +194,29 @@ export default function SimulatorWorkspace({ hidden }) {
           </div>
         </div>
 
-        <div id="sim-workbench" className="sim-container" role="region" aria-live="polite">
-          {/* Left Sidebar: Compact Info Widgets */}
-          <div className="sim-sidebar">
-            <div className="dark-info-widget">
-              <div className="widget-head-row">
-                <span className="meta-label">Skenario Aktif</span>
-                <span className="widget-mini-tag">Sesi #{attemptNum}</span>
+        {/* Unified Single-Column Chat Workbench */}
+        <div id="sim-workbench" className="sim-single-col-wrap" role="region" aria-live="polite">
+          <div className="sim-chat-area sim-unified-card">
+            {/* Top Scenario Context & Status Bar inside the Single Chat Window */}
+            <div className="sim-unified-top-meta">
+              <div className="sim-unified-scen-info">
+                <strong id="sim-scenario-title" className="sim-unified-scen-title">{scenario.title}</strong>
+                <p id="sim-scenario-desc" className="sim-unified-scen-desc">{scenario.desc}</p>
               </div>
-              <h3 id="sim-scenario-title" className="meta-value">{scenario.title}</h3>
-              <p id="sim-scenario-desc" className="meta-desc">{scenario.desc}</p>
-            </div>
-
-            <div className="sim-status-box">
-              <div className="status-row">
-                <span>Risiko</span>
+              <div className="sim-unified-metrics">
                 <span id="sim-risk-badge" className={getRiskBadgeClass(riskLabel)}>
                   {riskLabel}
                 </span>
-              </div>
-              <div className="status-row">
-                <span>Tahap</span>
-                <span id="sim-step-indicator">
-                  Langkah {stepIndex + 1} / {scenario.steps.length}
+                <span id="sim-step-indicator" className="sim-meta-pill">
+                  Tahap {stepIndex + 1}/{scenario.steps.length}
                 </span>
-              </div>
-              <div className="status-row">
-                <span>Skor</span>
-                <span id="sim-score-indicator" className="score-num">
-                  {score} / 100
+                <span id="sim-score-indicator" className="sim-meta-pill score-num">
+                  Skor {score}/100
                 </span>
               </div>
             </div>
 
-            <div className="sim-sidebar-actions">
-              <button
-                id="sim-restart-btn"
-                className="btn btn-secondary-dark btn-block"
-                type="button"
-                onClick={handleRestart}
-              >
-                Ulangi skenario
-              </button>
-            </div>
-          </div>
-
-          {/* Right Area: Conversation Thread & Decision Controls */}
-          <div className="sim-chat-area">
+            {/* Active Contact Bar */}
             <div className="sim-chat-header">
               <div className="chat-contact">
                 <div className="contact-avatar" id="sim-contact-avatar" aria-hidden="true">
@@ -267,12 +224,22 @@ export default function SimulatorWorkspace({ hidden }) {
                 </div>
                 <div>
                   <strong className="contact-name" id="sim-contact-name">{scenario.contactName}</strong>
-                  <span className="contact-status" id="sim-contact-status">{scenario.contactStatus}</span>
+                  <span className="contact-status" id="sim-contact-status">
+                    {scenario.contactStatus} • {aiSourceLabel}
+                  </span>
                 </div>
               </div>
-              <span className="secure-tag">Simulasi Fiktif</span>
+              <button
+                id="sim-restart-btn"
+                className="btn btn-secondary-dark btn-sm"
+                type="button"
+                onClick={handleRestart}
+              >
+                Ulangi Chat
+              </button>
             </div>
 
+            {/* Unified Conversation Log */}
             <div
               ref={chatScrollRef}
               className="sim-chat-messages"
@@ -281,39 +248,40 @@ export default function SimulatorWorkspace({ hidden }) {
               aria-label="Percakapan Simulasi"
             >
               {currentStep.botMessages.map((msg, idx) => (
-                <div key={idx} className="chat-bubble bubble-incoming">
+                <div key={`bot-${idx}`} className="chat-bubble bubble-incoming">
                   <span className="bubble-text">{msg}</span>
-                  <span className="bubble-meta">Diterima</span>
+                  <span className="bubble-meta">Pesan Masuk</span>
                 </div>
               ))}
 
               {selectedChoice && (
                 <div className="chat-bubble bubble-outgoing">
                   <span className="bubble-text">{selectedChoice.text}</span>
-                  <span className="bubble-meta">Dikirim</span>
+                  <span className="bubble-meta">Pilihan Anda</span>
+                </div>
+              )}
+
+              {customExchanges.map((item, idx) => (
+                <div
+                  key={`custom-${idx}`}
+                  className={`chat-bubble ${item.sender === 'user' ? 'bubble-outgoing' : 'bubble-incoming'}`}
+                >
+                  <span className="bubble-text">{item.text}</span>
+                  <span className="bubble-meta">{item.meta}</span>
+                </div>
+              ))}
+
+              {aiLoading && (
+                <div className="chat-bubble bubble-incoming">
+                  <span className="bubble-text">Lawan bicara sedang mengetik balasan...</span>
                 </div>
               )}
             </div>
 
-            <div className="sim-actions-area" id="sim-actions-panel" hidden={Boolean(selectedChoice)}>
-              <span className="actions-prompt" id="sim-actions-title">Pilih tindakan Anda:</span>
-              <div className="sim-choices-grid" id="sim-choices-container">
-                {currentStep.choices.map((choice, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="choice-btn"
-                    onClick={() => handleSelectChoice(choice)}
-                  >
-                    <strong>{String.fromCharCode(65 + idx)}.</strong> {choice.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+            {/* Evaluation Banner for Multiple-Choice Selection */}
             <div className="sim-feedback-box" id="sim-feedback-panel" hidden={!selectedChoice}>
               <div className="feedback-badge" id="sim-feedback-type">
-                {selectedChoice ? `Evaluasi: ${selectedChoice.riskLevel}` : 'Evaluasi keputusan'}
+                {selectedChoice ? `Status Keputusan: ${selectedChoice.riskLevel}` : 'Evaluasi'}
               </div>
               <h4 className="feedback-headline" id="sim-feedback-title">
                 {selectedChoice ? selectedChoice.feedbackTitle : 'Penjelasan'}
@@ -321,20 +289,20 @@ export default function SimulatorWorkspace({ hidden }) {
               <p className="feedback-text" id="sim-feedback-explanation">
                 {selectedChoice ? selectedChoice.feedbackText : ''}
               </p>
-              <div className="feedback-actions">
+              <div className="feedback-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   id="sim-next-btn"
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   type="button"
                   onClick={handleNextStep}
                 >
                   {selectedChoice && selectedChoice.nextStep === null
-                    ? 'Ulangi skenario'
-                    : 'Lanjutkan'}
+                    ? 'Mulai Ulang Skenario'
+                    : 'Lanjut Tahap Berikutnya'}
                 </button>
                 {selectedChoice && selectedChoice.nextStep === null && (
                   <button
-                    className="btn btn-secondary-dark"
+                    className="btn btn-secondary-dark btn-sm"
                     type="button"
                     onClick={() => {
                       const order = ['courier', 'bank', 'job'];
@@ -342,192 +310,96 @@ export default function SimulatorWorkspace({ hidden }) {
                       setSimulatorScenario(order[nextIdx]);
                     }}
                   >
-                    Skenario berikutnya
+                    Coba Skenario Lain
                   </button>
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Free AI Chatbot Sparring Lab (No Checkboxes — Pure Information Widgets) */}
-        <div className="sparring-lab-wrap">
-          <div className="section-intro-row sparring-header-row">
-            <div className="section-intro-copy">
-              <h3 className="section-title on-field sparring-title">
-                Chatbot Latihan Pertahanan (AI Gratis)
-              </h3>
-              <p className="section-description on-field-secondary">
-                Ketik balasan Anda secara bebas untuk menguji ketahanan menghadapi penipu AI.
-              </p>
-            </div>
-
-            <div className="scenario-nav" role="tablist" aria-label="Pilih Lawan Chatbot AI">
-              {Object.values(SPARRING_PERSONAS).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={personaKey === p.id}
-                  className={`tab-btn ${personaKey === p.id ? 'active' : ''}`}
-                  onClick={() => handleSelectPersona(p.id)}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="sim-container">
-            {/* Left Sidebar: Pure Information Widgets (Zero Checkboxes) */}
-            <div className="sim-sidebar">
-              <div className="dark-info-widget">
-                <div className="widget-head-row">
-                  <span className="meta-label">Target Latihan</span>
-                  <span className="widget-mini-tag">{activePersona.shortTag}</span>
-                </div>
-                <h4 className="meta-value">{activePersona.contactName}</h4>
-                <p className="meta-desc">
-                  Tolak permintaan transfer darurat, file .APK, atau kode OTP dengan kalimat Anda sendiri.
-                </p>
+            {/* Evaluation Banner for Manual Free-Text Reply */}
+            {manualEval && !selectedChoice && (
+              <div className="sim-feedback-box sparring-eval-card" style={{ margin: '0 20px 16px' }}>
+                <div className="feedback-badge">{manualEval.badgeText}</div>
+                <h4 className="feedback-headline">{manualEval.headline}</h4>
+                <p className="feedback-text" style={{ marginBottom: 0 }}>{manualEval.explanation}</p>
               </div>
+            )}
 
-              {/* Information Widget: AI Engine & Guardrail Telemetry */}
-              <div className="dark-info-widget">
-                <div className="widget-head-row">
-                  <span className="meta-label">Info Mesin Chatbot</span>
-                  <span className="strip-dot dot-green" />
-                </div>
-                <div className="sim-status-box" style={{ border: 'none', padding: 0 }}>
-                  <div className="status-row">
-                    <span>API AI Gratis</span>
-                    <span className="risk-badge risk-safe">{lastEngineSource}</span>
+            {/* Unified Bottom Composer: Option A (Multiple Choice) + Option B (Manual Chat Input) */}
+            <div className="sim-actions-area" id="sim-actions-panel">
+              {!selectedChoice && (
+                <>
+                  <span className="actions-prompt" id="sim-actions-title">
+                    <strong>Opsi 1:</strong> Klik pilihan tindakan cepat di bawah ini:
+                  </span>
+                  <div className="sim-choices-grid" id="sim-choices-container">
+                    {currentStep.choices.map((choice, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="choice-btn"
+                        onClick={() => handleSelectChoice(choice)}
+                      >
+                        <strong className="kw-on-dark">{String.fromCharCode(65 + idx)}.</strong> {choice.text}
+                      </button>
+                    ))}
                   </div>
-                  <div className="status-row">
-                    <span>Skor Pertahanan</span>
-                    <span className="score-num">{sparringScore} / 100</span>
-                  </div>
-                  <div className="status-row">
-                    <span>Penentu Skor</span>
-                    <span className="score-num">Guardrail Deterministik</span>
-                  </div>
-                </div>
-              </div>
-
-              {lastGuardrailEval ? (
-                <div className="sim-feedback-box sparring-eval-card">
-                  <div className="feedback-badge">{lastGuardrailEval.badgeText}</div>
-                  <h4 className="feedback-headline">{lastGuardrailEval.headline}</h4>
-                  <p className="feedback-text">{lastGuardrailEval.explanation}</p>
-                </div>
-              ) : (
-                <div className="dark-info-widget">
-                  <span className="meta-label">Tips Pertahanan Cepat</span>
-                  <p className="meta-desc">
-                    Minta verifikasi <strong>video call</strong>, alihkan ke <strong>Call Center resmi</strong>, dan tolak mentah-mentah file <strong>.APK</strong> maupun <strong>OTP</strong>.
-                  </p>
-                </div>
+                </>
               )}
-            </div>
 
-            <div className="sim-chat-area">
-              <div className="sim-chat-header">
-                <div className="chat-contact">
-                  <div className="contact-avatar" aria-hidden="true">{activePersona.contactAvatar}</div>
-                  <div>
-                    <strong className="contact-name">{activePersona.contactName}</strong>
-                    <span className="contact-status">Chatbot AI Gratis • Aktif</span>
+              {/* Manual Free-Text AI Chat Composer inside the same window */}
+              <div className="sim-manual-composer">
+                <div className="sim-manual-composer-head">
+                  <span className="actions-prompt" style={{ marginBottom: 0 }}>
+                    <strong>Opsi 2:</strong> Atau ketik sendiri balasan Anda ke <strong>AI Penipu</strong>:
+                  </span>
+                  <div className="sim-quick-manual-pills">
+                    <button
+                      type="button"
+                      className="btn btn-secondary-dark btn-sm"
+                      onClick={() =>
+                        handleSendManualChat(
+                          'Saya tidak mau buka file .APK atau kasih OTP. Saya cek langsung ke aplikasi resmi.'
+                        )
+                      }
+                    >
+                      Tolak .APK &amp; OTP
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary-dark btn-sm"
+                      onClick={() =>
+                        handleSendManualChat(
+                          'Ayo video call sekarang untuk bukti, saya tidak mau transfer ke rekening pribadi.'
+                        )
+                      }
+                    >
+                      Tantang Video Call
+                    </button>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-secondary-dark btn-sm"
-                  onClick={() => handleSelectPersona(personaKey)}
-                >
-                  Reset Chat
-                </button>
-              </div>
-
-              <div ref={sparringScrollRef} className="sim-chat-messages" role="log" aria-label="Dialog Sparring AI">
-                {sparringMessages.map((m, idx) => (
-                  <div
-                    key={idx}
-                    className={`chat-bubble ${m.sender === 'user' ? 'bubble-outgoing' : 'bubble-incoming'}`}
-                  >
-                    <span className="bubble-text">{m.text}</span>
-                    <span className="bubble-meta">
-                      {m.sender === 'user'
-                        ? 'Anda'
-                        : m.source === 'AI_HYBRID'
-                          ? 'AI Gratis (OpenAI)'
-                          : 'Chatbot Simulasi'}
-                    </span>
-                  </div>
-                ))}
-                {sparringLoading && (
-                  <div className="chat-bubble bubble-incoming">
-                    <span className="bubble-text">AI sedang mengetik balasan...</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="sim-actions-area">
-                <div className="preset-buttons sparring-quick-Chips">
-                  <button
-                    type="button"
-                    className="btn btn-secondary-dark btn-sm"
-                    onClick={() =>
-                      handleSendSparringReply(
-                        'Ayo video call 10 detik sekarang untuk bukti, saya tidak transfer ke rekening beda nama.'
-                      )
-                    }
-                  >
-                    Tantang Video Call
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary-dark btn-sm"
-                    onClick={() =>
-                      handleSendSparringReply(
-                        'Saya tidak mau buka file .APK atau kasih kode OTP. Saya cek langsung ke Call Center resmi.'
-                      )
-                    }
-                  >
-                    Tolak APK/OTP &amp; Cek Resmi
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary-dark btn-sm"
-                    onClick={() =>
-                      handleSendSparringReply(
-                        'Ini kode OTP saya 482910, tolong segera dibatalkan transaksinya.'
-                      )
-                    }
-                  >
-                    Simulasi Bocor OTP
-                  </button>
                 </div>
 
                 <form
                   className="sparring-input-row"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleSendSparringReply();
+                    handleSendManualChat();
                   }}
                 >
                   <input
                     type="text"
                     className="sparring-text-input"
-                    value={sparringInput}
-                    onChange={(e) => setSparringInput(e.target.value)}
-                    placeholder="Ketik balasan Anda (misal: Ayo video call dulu / Rekening siapa itu?)..."
+                    value={manualInput}
+                    onChange={(e) => setManualInput(e.target.value)}
+                    placeholder="Ketik balasan manual Anda di sini lalu tekan Kirim..."
+                    aria-label="Ketik balasan manual ke simulator"
                   />
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={sparringLoading || !sparringInput.trim()}
+                    disabled={aiLoading || !manualInput.trim()}
                   >
-                    Kirim
+                    Kirim Chat
                   </button>
                 </form>
               </div>

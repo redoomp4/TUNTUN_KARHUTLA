@@ -1,0 +1,14 @@
+{
+  "name": "tuntun-digital-guardian-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TUNTUN: Digital Guardian Full-Stack Monorepo (Frontend React/Vite + Stateless Backend API)",
+  "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix Backend install",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix Backend run start",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "test": "node tests/test_engines.mjs && py -3 tests/verify_suite.py"
+  }
+}

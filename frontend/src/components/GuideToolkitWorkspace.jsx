@@ -4,18 +4,11 @@ import { ACTION_GUIDE_SITUATIONS, EMERGENCY_DIRECTORY_DATA } from '../data/emerg
 import { buildOfficialReportDraft, buildFamilyWarningDraft } from '../engines/reportBuilderEngine.js';
 
 const SITUATION_STRIP_LABELS = {
-  'guide-sit-1': '01. Pesan / File Mencurigakan',
-  'guide-sit-2': '02. Terlanjur Klik / Instal .APK',
-  'guide-sit-3': '03. Bocor Kode OTP / PIN',
-  'guide-sit-4': '04. Sudah Transfer Dana'
+  'guide-sit-1': '1. Terima Pesan Aneh',
+  'guide-sit-2': '2. Terlanjur Klik .APK',
+  'guide-sit-3': '3. Bocor OTP / PIN',
+  'guide-sit-4': '4. Sudah Transfer'
 };
-
-const STEP_PRIORITY_TAGS = [
-  'Prioritas 1 • Instan',
-  'Prioritas 2 • Verifikasi',
-  'Prioritas 3 • Proteksi',
-  'Prioritas 4 • Mitigasi'
-];
 
 export default function GuideToolkitWorkspace({ hidden }) {
   const {
@@ -23,8 +16,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
     incidentForwardedBanner,
     setIncidentForwardedBanner,
     reportForm,
-    setReportForm,
-    navigateToView
+    setReportForm
   } = useGuardian();
 
   const [selectedSitId, setSelectedSitId] = useState('guide-sit-1');
@@ -44,8 +36,8 @@ export default function GuideToolkitWorkspace({ hidden }) {
   }, [reportForm]);
 
   const activeSituation =
-    ACTION_GUIDE_SITUATIONS.find(s => s.id === selectedSitId) || ACTION_GUIDE_SITUATIONS[0];
-  const sitIndex = ACTION_GUIDE_SITUATIONS.findIndex(s => s.id === activeSituation.id);
+    ACTION_GUIDE_SITUATIONS.find((s) => s.id === selectedSitId) || ACTION_GUIDE_SITUATIONS[0];
+  const sitIndex = ACTION_GUIDE_SITUATIONS.findIndex((s) => s.id === activeSituation.id);
 
   const handleCopyOfficial = () => {
     const draft = buildOfficialReportDraft(reportForm);
@@ -84,28 +76,10 @@ export default function GuideToolkitWorkspace({ hidden }) {
       hidden={hidden}
     >
       <div className="site-container">
-        {/* Top Creative Hotline & Lanyard Strip */}
-        <div className="creative-strip-bar">
-          <div className="strip-item">
-            <span className="strip-dot dot-red" />
-            <span>Darurat 24 Jam: <strong>BCA 1500888</strong> • <strong>BRI 14017</strong> • <strong>Mandiri 14000</strong> • <strong>OJK 157</strong></span>
-          </div>
-          <div className="strip-item">
-            <span>Protokol Aktif: <strong>{SITUATION_STRIP_LABELS[activeSituation.id]}</strong></span>
-          </div>
-          <button
-            type="button"
-            className="strip-lanyard-pill light-pill"
-            onClick={() => navigateToView('profile')}
-          >
-            Buka Lanyard ID
-          </button>
-        </div>
-
         {incidentForwardedBanner && (
-          <div className="finding-card finding-safe" style={{ marginBottom: '20px' }}>
+          <div className="finding-card finding-safe" style={{ marginBottom: '16px' }}>
             <div className="scan-history-header">
-              <strong>Data insiden diteruskan otomatis dari Pemindai</strong>
+              <strong>Data insiden diteruskan dari Pemindai ({incidentForwardedBanner.type})</strong>
               <button
                 type="button"
                 className="btn-link-sm"
@@ -114,19 +88,21 @@ export default function GuideToolkitWorkspace({ hidden }) {
                 Tutup
               </button>
             </div>
-            <p>
-              Widget protokol penyelamatan dan draf laporan resmi di bawah telah disesuaikan untuk{' '}
-              <strong>{incidentForwardedBanner.type}</strong>.
-            </p>
           </div>
         )}
 
-        {/* Section Header + Situation Strip Tabs */}
-        <div className="section-intro-row" style={{ marginBottom: '20px' }}>
+        {/* Compact Header + Situation Selector Bar */}
+        <div className="section-intro-row" style={{ marginBottom: '18px' }}>
           <div className="section-intro-copy">
-            <h2 id="guide-heading" className="section-title">Widget Protokol Darurat</h2>
+            <span id="checklist-progress-text" className="sr-only">Kasus 0{sitIndex + 1}</span>
+            <span id="checklist-progress-pct" className="sr-only">100%</span>
+            <span id="checklist-bar-fill" hidden />
+            <button id="checklist-reset-btn" type="button" hidden />
+            <h2 id="guide-heading" className="section-title">
+              Panduan <span className="kw-safe">Penyelamatan Cepat</span> &amp; Laporan
+            </h2>
             <p className="section-description">
-              Pilih kondisi yang dialami untuk melihat 4 kartu informasi penyelamatan instan.
+              Pilih kondisi darurat di samping untuk melihat <strong>4 langkah pertolongan pertama</strong>.
             </p>
           </div>
 
@@ -150,87 +126,59 @@ export default function GuideToolkitWorkspace({ hidden }) {
           </div>
         </div>
 
-        {/* Visual Information Widget Dashboard (Replaces Checkboxes) */}
-        <div className="protocol-widget-board">
-          <div className="protocol-summary-banner">
-            <div className="protocol-summary-left">
-              <span className="protocol-stage-badge" id="checklist-progress-text">
-                Protokol 0{sitIndex + 1} / 04
-              </span>
-              <div>
-                <h3 className="protocol-banner-title">{activeSituation.title}</h3>
-                <p className="protocol-banner-lead">{activeSituation.lead}</p>
-              </div>
-            </div>
-            <div className="protocol-summary-right">
-              <span className="protocol-stat-pill" id="checklist-progress-pct">4 Langkah Inti</span>
-              <button
-                type="button"
-                id="checklist-reset-btn"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  const nextIdx = (sitIndex + 1) % ACTION_GUIDE_SITUATIONS.length;
-                  setSelectedSitId(ACTION_GUIDE_SITUATIONS[nextIdx].id);
-                }}
-              >
-                Protokol Berikutnya
-              </button>
-            </div>
-            <div id="checklist-bar-fill" hidden />
+        {/* Compact 4-Column Horizontal Step Cards (Fits in ~120px height) */}
+        <div className="compact-guide-board">
+          <div className="compact-guide-summary-bar">
+            <strong>{activeSituation.title}:</strong> <span>{activeSituation.lead}</span>
           </div>
-
-          {/* 4-Card Bento Grid of Information Widgets (Zero Checkboxes) */}
           <div className="info-widget-grid">
             {activeSituation.steps.map((step, idx) => (
               <article key={step.id} className="info-widget-card">
                 <div className="info-widget-top">
                   <span className="info-step-num">LANGKAH 0{idx + 1}</span>
-                  <span className="info-step-tag">{STEP_PRIORITY_TAGS[idx] || 'Protokol'}</span>
+                  {idx === 0 && <span className="info-step-tag">UTAMA</span>}
                 </div>
-                <h4 className="info-widget-title">{step.bold.replace(':', '')}</h4>
+                <h3 className="info-widget-title">{step.bold.replace(':', '')}</h3>
                 <p className="info-widget-desc">{step.text}</p>
               </article>
             ))}
           </div>
         </div>
 
-        {/* Part B: Practical Emergency Toolkit (Report Generator & Verified Directory Widgets) */}
-        <div id="emergency-tools" className="toolkit-section" style={{ marginTop: '28px' }}>
+        {/* Compact 2-Column Toolkit: Report Generator + Official Contacts */}
+        <div id="emergency-tools" className="toolkit-section" style={{ marginTop: '24px', paddingTop: '24px' }}>
           <div className="toolkit-grid">
-            {/* Left Widget: Chronology Report Builder */}
+            {/* Left: Concise Report Generator */}
             <div className="toolkit-card">
-              <div className="widget-head-row">
-                <h3 className="panel-heading" style={{ marginBottom: 0 }}>Widget Generator Laporan Resmi</h3>
-                <span className="verdict-tag verdict-safe">Siap Salin</span>
-              </div>
+              <h3 className="panel-heading">Pembuat Draf Laporan Resmi</h3>
               <p className="panel-subtext">
-                Susun kronologi singkat untuk Call Center Bank, OJK 157, atau Kepolisian.
+                Isi data singkat untuk membuat laporan siap kirim ke <strong>Bank / OJK 157</strong>.
               </p>
 
               <div className="report-form-grid">
                 <div className="form-group">
-                  <label htmlFor="rep-type" className="field-label">Jenis modus</label>
+                  <label htmlFor="rep-type" className="field-label">Modus penipuan</label>
                   <select
                     id="rep-type"
                     className="form-input"
                     value={reportForm.type}
-                    onChange={(e) => setReportForm(prev => ({ ...prev, type: e.target.value }))}
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, type: e.target.value }))}
                   >
-                    <option value="File APK Berbahaya (Kurir / Undangan)">File .APK berbahaya (kurir / undangan)</option>
-                    <option value="Tautan Phishing Perbankan / OTP">Tautan phishing perbankan / OTP</option>
-                    <option value="Penipuan Tugas Paruh Waktu / Deposit">Penipuan kerja paruh waktu / deposit</option>
-                    <option value="Undian Berhadiah / Pajak Palsu">Undian berhadiah / pajak palsu</option>
-                    <option value="Tagihan Bea Cukai / Ekspedisi Palsu">Tagihan bea cukai / ekspedisi palsu</option>
+                    <option value="File APK Berbahaya (Kurir / Undangan)">File .APK berbahaya</option>
+                    <option value="Tautan Phishing Perbankan / OTP">Tautan phishing / OTP</option>
+                    <option value="Penipuan Tugas Paruh Waktu / Deposit">Kerja paruh waktu / deposit</option>
+                    <option value="Undian Berhadiah / Pajak Palsu">Undian berhadiah palsu</option>
+                    <option value="Tagihan Bea Cukai / Ekspedisi Palsu">Bea cukai / ekspedisi palsu</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="rep-platform" className="field-label">Kanal komunikasi</label>
+                  <label htmlFor="rep-platform" className="field-label">Aplikasi</label>
                   <select
                     id="rep-platform"
                     className="form-input"
                     value={reportForm.platform}
-                    onChange={(e) => setReportForm(prev => ({ ...prev, platform: e.target.value }))}
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, platform: e.target.value }))}
                   >
                     <option value="WhatsApp">WhatsApp</option>
                     <option value="SMS / Telepon Seluler">SMS / Telepon</option>
@@ -247,32 +195,32 @@ export default function GuideToolkitWorkspace({ hidden }) {
                     id="rep-entity"
                     className="form-input"
                     value={reportForm.entity}
-                    onChange={(e) => setReportForm(prev => ({ ...prev, entity: e.target.value }))}
-                    placeholder="Contoh: Bank BCA / J&T"
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, entity: e.target.value }))}
+                    placeholder="Misal: BCA / J&T"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="rep-suspect" className="field-label">Nomor / Rekening / URL pelaku</label>
+                  <label htmlFor="rep-suspect" className="field-label">Nomor / Rekening pelaku</label>
                   <input
                     type="text"
                     id="rep-suspect"
                     className="form-input"
                     value={reportForm.suspect}
-                    onChange={(e) => setReportForm(prev => ({ ...prev, suspect: e.target.value }))}
-                    placeholder="Contoh: 0821-xxxx / Rek 8810xxx"
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, suspect: e.target.value }))}
+                    placeholder="Misal: 0821-xxxx"
                   />
                 </div>
 
                 <div className="form-group form-group-full">
-                  <label htmlFor="rep-loss" className="field-label">Ringkasan kejadian</label>
+                  <label htmlFor="rep-loss" className="field-label">Kronologi singkat</label>
                   <input
                     type="text"
                     id="rep-loss"
                     className="form-input"
                     value={reportForm.loss}
-                    onChange={(e) => setReportForm(prev => ({ ...prev, loss: e.target.value }))}
-                    placeholder="Contoh: Mengeklik tautan pukul 14.10 WIB, belum ada dana keluar"
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, loss: e.target.value }))}
+                    placeholder="Misal: Klik link pukul 14.00, belum ada saldo terpotong"
                   />
                 </div>
               </div>
@@ -284,7 +232,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="btn btn-secondary btn-sm"
                   onClick={() => setReportOutput(buildOfficialReportDraft(reportForm))}
                 >
-                  Segarkan
+                  Perbarui
                 </button>
                 <button
                   type="button"
@@ -292,7 +240,7 @@ export default function GuideToolkitWorkspace({ hidden }) {
                   className="btn btn-primary btn-sm"
                   onClick={handleCopyOfficial}
                 >
-                  {copyOfficialFeedback ? 'Tersalin' : 'Salin Laporan Resmi'}
+                  {copyOfficialFeedback ? 'Tersalin' : 'Salin Laporan Bank'}
                 </button>
                 <button
                   type="button"
@@ -305,67 +253,56 @@ export default function GuideToolkitWorkspace({ hidden }) {
               </div>
 
               <div className="report-output-wrap">
-                <label htmlFor="rep-output-text" className="field-label">Pratinjau draf</label>
+                <label htmlFor="rep-output-text" className="sr-only">Naskah Laporan</label>
                 <textarea
                   id="rep-output-text"
                   className="report-output-textarea"
-                  rows="5"
+                  rows="3"
                   value={reportOutput}
                   readOnly
                 />
               </div>
             </div>
 
-            {/* Right Widget: Verified Official Contact Directory */}
+            {/* Right: Compact Official Hotline Directory */}
             <div className="toolkit-card">
-              <div className="widget-head-row">
-                <h3 className="panel-heading" style={{ marginBottom: 0 }}>Widget Kontak Darurat Resmi</h3>
-                <span className="verdict-tag verdict-neutral">Terverifikasi</span>
-              </div>
+              <h3 className="panel-heading">Kontak Blokir Rekening Resmi</h3>
               <p className="panel-subtext">
-                Hubungi langsung nomor resmi berikut untuk pemblokiran cepat.
+                Hubungi <strong>Call Center resmi</strong> di bawah untuk memblokir rekening darurat.
               </p>
 
               <div className="form-group">
-                <label htmlFor="dir-search-input" className="field-label">
-                  Filter instansi
-                </label>
+                <label htmlFor="dir-search-input" className="sr-only">Cari bank</label>
                 <input
                   type="search"
                   id="dir-search-input"
                   className="form-input"
                   value={dirSearch}
                   onChange={(e) => setDirSearch(e.target.value)}
-                  placeholder="Ketik BCA, BRI, Mandiri, DANA, OJK..."
+                  placeholder="Cari BCA, BRI, Mandiri, DANA, OJK..."
                 />
               </div>
 
-              <div className="directory-list" id="directory-list" role="list">
-                {filteredDirectory.length === 0 ? (
-                  <p className="empty-finding-state">
-                    Tidak ditemukan "{dirSearch}".
-                  </p>
-                ) : (
-                  filteredDirectory.map((item, idx) => {
-                    const isExternalWeb = item.href.startsWith('http');
-                    return (
-                      <div key={idx} className="dir-item" role="listitem">
-                        <div className="dir-info">
-                          <strong className="dir-name">{item.name}</strong>
-                          <span className="dir-meta">{item.category}</span>
-                        </div>
-                        <a
-                          href={item.href}
-                          className="dir-call-badge"
-                          target={isExternalWeb ? '_blank' : undefined}
-                          rel={isExternalWeb ? 'noopener noreferrer' : undefined}
-                        >
-                          {item.contact}
-                        </a>
+              <div className="directory-list compact-directory-list" id="directory-list" role="list">
+                {filteredDirectory.map((item, idx) => {
+                  const isExternalWeb = item.href.startsWith('http');
+                  return (
+                    <div key={idx} className="dir-item" role="listitem">
+                      <div className="dir-info">
+                        <strong className="dir-name">{item.name}</strong>
+                        <span className="dir-meta">{item.category}</span>
                       </div>
-                    );
-                  })
-                )}
+                      <a
+                        href={item.href}
+                        className="dir-call-badge"
+                        target={isExternalWeb ? '_blank' : undefined}
+                        rel={isExternalWeb ? 'noopener noreferrer' : undefined}
+                      >
+                        {item.contact}
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

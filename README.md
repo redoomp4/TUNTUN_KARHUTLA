@@ -116,3 +116,13 @@ npm run build
 node D:\LOMBA\WEB\tests\test_engines.mjs
 py -3 D:\LOMBA\WEB\tests\verify_suite.py
 ```
+
+---
+
+## 4. Panduan Deploy Vercel & Naskah Presentasi Demo
+
+Panduan lengkap langkah demi langkah deploy ke Vercel dan naskah script presentasi demo 3 menit dapat dibaca langsung pada:
+📄 **[`DOKUMENTASI_DAN_SCRIPT_DEMO.md`](./DOKUMENTASI_DAN_SCRIPT_DEMO.md)**
+- Langkah Deploy Vercel (Metode GitHub & Vercel CLI)
+- Ringkasan Fitur & Alur Penggunaan
+- Naskah Script Demo Lengkap dengan Petunjuk Aksi Layar (*Cues*)

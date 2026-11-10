@@ -80,16 +80,16 @@ export function evaluateMessageHeuristics(rawInput) {
     detectedType = 'File APK Berbahaya (Kurir / Undangan)';
     detectedSuspects.push(snippetStr);
     anatomyItems.push({
-      label: 'Distribusi paket aplikasi (.APK)',
+      label: 'Distribusi Paket Aplikasi (.APK)',
       code: snippetStr,
-      note: 'Tautan atau berkas instalasi .APK di luar Play Store resmi (risiko malware / penyadap SMS)'
+      note: 'Tautan atau berkas instalasi aplikasi di luar Play Store resmi'
     });
     findings.push({
       id: 'R-01',
       severity: 'high',
-      title: 'Deteksi distribusi berkas / tautan aplikasi .APK berbahaya',
+      title: 'Tautan / File Aplikasi (.APK) Berbahaya',
       snippet: snippetStr,
-      desc: 'Pesan mengarahkan penerima untuk mengunduh atau memasang paket aplikasi (.APK) dari tautan eksternal. Aplikasi di luar toko resmi berisiko tinggi menyadap SMS OTP atau memasang aplikasi ilegal.'
+      desc: 'Pesan meminta memasang file .APK di luar Play Store resmi. Berisiko tinggi menyadap SMS OTP dan PIN.'
     });
   }
 
@@ -109,9 +109,9 @@ export function evaluateMessageHeuristics(rawInput) {
     findings.push({
       id: 'R-08',
       severity: 'high',
-      title: 'Indikasi kuat SMS blast situs judi online / janji penarikan dana instan',
+      title: 'SMS Promosi Judi Online / Penarikan Instan',
       snippet: snippetStr,
-      desc: 'Pelaku sengaja menyamarkan kata kunci seperti "With-draw" dengan tanda hubung dan menjanjikan penarikan miliaran rupiah dalam hitungan menit untuk melewati filter spam operator.'
+      desc: 'Menyamarkan kata "with-draw" dan iming-iming dana instan untuk menghindari filter spam.'
     });
   }
 
@@ -152,14 +152,13 @@ export function evaluateMessageHeuristics(rawInput) {
       });
 
       if (isTelcoPromoDomain) {
-        // Telco LBA shortlink: add minor caution score (15) only if not asking for OTP/PIN
-        riskScore += 15;
+        // Telco LBA broadcast domain: official operator promotion
         findings.push({
           id: 'R-09',
           severity: 'safe',
-          title: 'Terdeteksi tautan iklan resmi operator seluler (Telco MyAds)',
+          title: 'Tautan Iklan Operator (MyAds)',
           snippet: cleanUrl,
-          desc: `Tautan ${host} merupakan platform distribusi iklan resmi operator seluler. Meskipun bukan tautan phishing pencuri OTP, sebaiknya akses promo perbankan langsung melalui situs/aplikasi resmi bank terkait.`
+          desc: `Tautan ${host} adalah platform periklanan resmi operator seluler (bukan phishing pencuri OTP).`
         });
       } else if ((hasSuspiciousTld || isShortener) && !isOfficial) {
         const hasRiskySlug = /(vip|apk|batal|tarif|bonus|slot|win|claim|login)/i.test(pathSlug);
@@ -169,10 +168,10 @@ export function evaluateMessageHeuristics(rawInput) {
           id: 'R-04',
           severity: 'high',
           title: isShortener
-            ? 'Penggunaan tautan pendek pengalih (shortlink) mencurigakan'
-            : 'Alamat tautan menggunakan domain tidak resmi / berisiko tinggi',
+            ? 'Tautan Pendek Pengalih (Shortlink)'
+            : 'Alamat Domain Tidak Resmi / Berisiko',
           snippet: cleanUrl,
-          desc: `Tautan pada domain "${host}" menyembunyikan alamat tujuan asli${hasRiskySlug ? ` dan memuat jalur berisiko (${pathSlug})` : ''}. Jangan pernah mengeklik tautan pendek dari pengirim tidak dikenal.`
+          desc: `Tautan pada "${host}" menyembunyikan alamat tujuan asli${hasRiskySlug ? ` dengan indikasi berisiko (${pathSlug})` : ''}.`
         });
       } else if (!isOfficial) {
         const spoofedBrand = ['bca', 'bri', 'mandiri', 'bni', 'bsi', 'mega', 'ojk', 'pajak', 'beacukai', 'jnt', 'jne', 'shopee'].find(
@@ -184,9 +183,9 @@ export function evaluateMessageHeuristics(rawInput) {
           findings.push({
             id: 'R-04',
             severity: 'high',
-            title: 'Manipulasi nama instansi pada domain palsu (typosquatting)',
+            title: 'Domain Meniru Nama Instansi Resmi',
             snippet: cleanUrl,
-            desc: `Domain "${host}" mencatut nama "${spoofedBrand.toUpperCase()}" untuk meniru situs resmi.`
+            desc: `Alamat "${host}" meniru identitas "${spoofedBrand.toUpperCase()}" secara tidak sah.`
           });
         }
       }
@@ -216,9 +215,9 @@ export function evaluateMessageHeuristics(rawInput) {
     findings.push({
       id: 'R-02',
       severity: 'high',
-      title: 'Permintaan kredensial rahasia atau izin akses SMS/OTP',
+      title: 'Permintaan Kode OTP / PIN Rahasia',
       snippet: credMatch[0],
-      desc: 'Bank, ekspedisi, dan perusahaan resmi tidak pernah meminta kode OTP, PIN, CVV, atau izin membaca SMS melalui pesan.'
+      desc: 'Pihak resmi tidak pernah meminta kode rahasia OTP atau PIN melalui pesan chat.'
     });
   }
 
@@ -231,9 +230,9 @@ export function evaluateMessageHeuristics(rawInput) {
     findings.push({
       id: 'R-05',
       severity: 'medium',
-      title: 'Tekanan psikologis dan batas waktu mendesak',
+      title: 'Batas Waktu Mendesak (Manipulasi Panik)',
       snippet: urgencyMatch[0],
-      desc: 'Penipu sengaja menciptakan kepanikan atau iming-iming kecepatan instan ("hitungan menit") agar korban bertindak impulsif tanpa melakukan verifikasi.'
+      desc: 'Penipu mendesak waktu agar korban panik dan bertindak ceroboh tanpa verifikasi.'
     });
   }
 
@@ -250,9 +249,9 @@ export function evaluateMessageHeuristics(rawInput) {
     findings.push({
       id: 'R-03',
       severity: 'high',
-      title: 'Indikasi umpan finansial, ancaman tarif, atau setoran deposit di muka',
+      title: 'Tawaran Komisi / Ancaman Potong Saldo',
       snippet: moneyBaitMatch[0],
-      desc: 'Ancaman pemotongan tarif bulanan atau tawaran komisi yang meminta deposit terlebih dahulu adalah modus penipuan finansial.'
+      desc: 'Modus meminta uang muka/deposit atau ancaman perubahan tarif bank fiktif.'
     });
   }
 
@@ -265,9 +264,9 @@ export function evaluateMessageHeuristics(rawInput) {
       findings.push({
         id: 'R-06',
         severity: 'medium',
-        title: 'Penggunaan nomor seluler pribadi untuk klaim instansi',
+        title: 'Nomor WhatsApp Pribadi Mengaku Instansi',
         snippet: phoneMatch[0],
-        desc: 'Pengumuman resmi korporasi atau instansi negara tidak dikirim melalui nomor WhatsApp atau seluler pribadi biasa.'
+        desc: 'Instansi resmi tidak menghubungi nasabah dengan nomor seluler pribadi biasa.'
       });
     }
   }
@@ -275,16 +274,16 @@ export function evaluateMessageHeuristics(rawInput) {
   // R-10: Telco Promotional Opt-Out Recognition ("Kirim STOP ... ke 8000")
   if (telcoOptOutMatch) {
     anatomyItems.push({
-      label: 'Kode berhenti berlangganan iklan (Opt-Out)',
+      label: 'Fitur Berhenti Promosi (Opt-Out)',
       code: telcoOptOutMatch[0],
-      note: 'Format resmi SMS broadcast periklanan operator seluler (shortcode 8000)'
+      note: 'Format resmi SMS operator untuk opsi berhenti menerima pesan iklan (shortcode 8000)'
     });
     findings.push({
       id: 'R-10',
       severity: 'safe',
-      title: 'Teridentifikasi sebagai SMS promosi/iklan operator (bukan pencurian OTP)',
+      title: 'Fitur Berhenti Promosi (STOP 8000)',
       snippet: telcoOptOutMatch[0],
-      desc: 'Kalimat "Kirim STOP ... ke 8000" menandakan ini adalah SMS broadcast iklan komersial operator seluler. Pesan ini tidak meminta OTP/PIN, namun jika Anda ingin mengajukan produk bank tersebut, disarankan tetap membuka aplikasi atau situs resmi bank secara mandiri.'
+      desc: 'Pesan menyediakan kode STOP 8000 standar operator seluler. Tidak ada permintaan OTP atau PIN.'
     });
   }
 
@@ -296,41 +295,46 @@ export function evaluateMessageHeuristics(rawInput) {
     detectedEntity = entityMatch[0];
   }
 
-  const finalScore = Math.min(100, Math.max(0, riskScore));
+  // Pure official telco promo broadcast without APK/OTP threats has zero scam risk
+  let calculatedScore = riskScore;
+  if (isTelcoPromoBroadcast && !apkFileMatch && !apkLinkOrMentionMatch && !gamblingMatch && !credMatch && !moneyBaitMatch) {
+    calculatedScore = 0;
+  }
+  const finalScore = Math.min(100, Math.max(0, calculatedScore));
 
   if (findings.length === 0) {
     findings.push({
       id: 'SAFE',
       severity: 'safe',
-      title: 'Tidak ditemukan indikator penipuan eksplisit',
-      snippet: 'Teks bersih dari pola umum',
-      desc: 'Mesin pemeriksa tidak menemukan ekstensi berbahaya, domain mencurigakan, atau permintaan OTP. Tetap lakukan verifikasi mandiri melalui kanal resmi.'
+      title: 'Pesan Bersih dari Indikator Penipuan',
+      snippet: 'Pola normal terverifikasi',
+      desc: 'Tidak ditemukan berkas mencurigakan (.APK), domain palsu, atau permintaan PIN/OTP.'
     });
   }
 
   let verdictLevel = 'SAFE';
   let verdictBadgeText = 'Risiko rendah';
-  let verdictTitle = 'Tidak ditemukan pola serangan langsung';
-  let verdictDesc = 'Pesan tampak menggunakan format wajar atau domain resmi. Tetap jaga kerahasiaan kode OTP dan PIN Anda.';
+  let verdictTitle = 'Pesan Normal / Tidak Berbahaya';
+  let verdictDesc = 'Format pesan wajar dan tidak meminta data rahasia. Tetap jangan pernah bagikan kode OTP atau PIN.';
 
   if (isTelcoPromoBroadcast && finalScore < 35) {
     verdictLevel = 'SAFE';
     verdictBadgeText = 'Iklan promosi operator';
-    verdictTitle = 'SMS promosi komersial teridentifikasi (bukan phishing OTP)';
+    verdictTitle = 'SMS Promosi Resmi Operator (Bukan Penipuan)';
     verdictDesc =
-      'Pesan ini merupakan penawaran promosi via layanan iklan operator seluler (MyAds / Shortcode 8000) dan tidak meminta OTP atau PIN. Untuk keamanan maksimal, ajukan produk langsung di aplikasi/situs resmi bank atau kirim STOP ke 8000 jika tidak berkenan.';
+      'Pesan penawaran legal dari saluran promosi operator seluler (MyAds & STOP 8000). Tidak meminta OTP, PIN, atau berkas .APK.';
   } else if (finalScore >= 60) {
     verdictLevel = 'DANGER';
     verdictBadgeText = 'Risiko tinggi';
-    verdictTitle = 'Indikasi kuat penipuan digital / konten berbahaya';
+    verdictTitle = 'Indikasi Kuat Konten Berbahaya';
     verdictDesc =
-      'Jangan mengeklik tautan, jangan mengunduh lampiran berkas (.APK), dan jangan membalas pesan ini. Segera blokir kontak pengirim.';
+      'Jangan klik tautan, jangan unduh berkas .APK, dan jangan berikan kode OTP. Segera blokir nomor pengirim.';
   } else if (finalScore >= 25) {
     verdictLevel = 'WARN';
     verdictBadgeText = 'Perlu verifikasi';
-    verdictTitle = 'Ditemukan pola pesan mencurigakan';
+    verdictTitle = 'Ditemukan Pola Mencurigakan';
     verdictDesc =
-      'Terdapat indikasi manipulasi atau tautan eksternal tidak standar. Konfirmasi kebenarannya hanya melalui aplikasi atau Call Center resmi.';
+      'Terdapat tautan eksternal atau kalimat mencurigakan. Konfirmasi kebenarannya hanya melalui aplikasi resmi.';
   }
 
   const endPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
